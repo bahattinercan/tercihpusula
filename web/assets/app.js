@@ -2,6 +2,8 @@
 // Veri /data/<seviye>.json içinde; 555 satırlık en büyük liste tarayıcıda rahat.
 
 const MAX_TERCIH = 30;
+// 2025/2 lisans 990 satır: tavan tüm dönemleri kapsar, hiçbir satır gizlenmez
+const MAX_ROWS = 1200;
 // Durum dili katalogdan: LED (CSS ::before) + etiket + satırdaki eşik değeri.
 const BANDS = {
   garanti: { label: 'garanti' },
@@ -104,7 +106,7 @@ function renderTable() {
   const rows = filteredRows();
   const body = $('#rows');
   const frag = document.createDocumentFragment();
-  for (const row of rows.slice(0, 400)) {
+  for (const row of rows.slice(0, MAX_ROWS)) {
     const tr = document.createElement('tr');
     const band = bandOf(state.puan, row.tahmin, sigma);
     const meta = BANDS[band];
@@ -126,7 +128,7 @@ function renderTable() {
     frag.append(tr);
   }
   body.replaceChildren(frag);
-  $('#count').textContent = `${rows.length} satır${rows.length > 400 ? ' (ilk 400 gösteriliyor)' : ''}`;
+  $('#count').textContent = `${rows.length} satır${rows.length > MAX_ROWS ? ` (ilk ${MAX_ROWS} gösteriliyor, filtreyi daraltın)` : ''}`;
 }
 
 function renderList() {

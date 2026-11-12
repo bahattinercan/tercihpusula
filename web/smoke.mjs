@@ -5,7 +5,7 @@
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { spawn } from 'node:child_process';
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, writeFileSync, readFileSync } from 'node:fs';
 import { join, dirname, extname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
@@ -229,6 +229,24 @@ async function main() {
     const lightShot = await client.send('Page.captureScreenshot', { format: 'png' });
     writeFileSync(join(SHOTS, 'uygulama-acik-tema.png'), Buffer.from(lightShot.data, 'base64'));
     await client.send('Emulation.setEmulatedMedia', { features: [] });
+
+    // her seviyede: tabloda görünen kontenjan toplamı = dist/data toplamı = resmî ÖSYM toplamı
+    for (const [level, officialKontenjan] of [['lisans', 977], ['onlisans', 828], ['ortaogretim', 278]]) {
+      await client.send('Page.navigate', { url: `http://127.0.0.1:${PORT}/uygulama.html?seviye=${level}&puan=85` });
+      await sleep(600);
+      const sumShown = await evaluate(
+        client,
+        "[...document.querySelectorAll('#rows tr')].reduce((s, tr) => s + (Number(tr.querySelectorAll('td')[1].textContent.trim()) || 0), 0)",
+      );
+      const dataRows = JSON.parse(readFileSync(join(DIST, 'data', `${level}.json`), 'utf8')).rows;
+      const sumData = dataRows.reduce((s, row) => s + row.knt, 0);
+      const shownCount = await evaluate(client, "document.querySelectorAll('#rows tr').length");
+      check(
+        `${level}: görünen kontenjan = resmî toplam`,
+        sumShown === officialKontenjan && sumData === officialKontenjan && shownCount === dataRows.length,
+        `ekran ${sumShown} · veri ${sumData} · ÖSYM ${officialKontenjan} · ${shownCount}/${dataRows.length} satır`,
+      );
+    }
 
     // boş kalan kadrolar: 3 dönem tablosu + unvan kırılımı
     await client.send('Emulation.clearDeviceMetricsOverride');

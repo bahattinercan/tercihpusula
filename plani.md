@@ -233,3 +233,25 @@ sayısıyla; toplam satırı ÖSYM sayfasına bağlı) · **kapı tablosu** (A�
 (6 madde) · **yeniden üretim komutları**.
 
 Kapı: `npm test` 38 + smoke 25, hepsi geçti.
+
+### Veri denetimi (2026-11-12)
+
+Sorulan soru: "uygulamadaki veriler doğru mu". Yapılan ölçümler:
+
+1. **PDF ↔ kayıt (bağımsız çıkarım):** `pdftotext -raw` ile 1106 satırın tamamı yeniden
+   okundu, kontenjan / yerleşen / minPuan / maxPuan alanları karşılaştırıldı → **0 fark**.
+   Metin alanları da (kurum / il / unvan) 1106/1106 satırda PDF satırında birebir geçiyor.
+2. **Kayıt ↔ resmî özet:** kontenjan ve yerleşen toplamları ÖSYM "Sayısal Bilgiler"
+   belgesiyle üç düzeyde de birebir (977/976, 828/828, 278/278).
+3. **Uygulama ↔ kayıt:** dist/data satırları kaynak kayıtla kod kümesi, kontenjan, taban
+   puan, il, unvan, boş bayrağı bazında birebir (555/410/141 satır).
+4. **Ekran ↔ veri:** headless tarayıcıda görünen tablo toplamı = veri toplamı = resmî
+   toplam (977 / 828 / 278); 1106 satırın hepsi render ediliyor (tavan 400 → 1200).
+5. **Yeniden üretim:** `parse` + `guide` yeniden çalıştırıldı, `git status` temiz →
+   kayıtlar ham PDF'lerden bit-bit aynı üretiliyor.
+6. **Nitelik kodları:** her satırın kodları kılavuz sözlüğünde var (0 eksik); sertifika /
+   işaretçi / bilinmeyen kod taşıyan 649 satır (%58,7) "kontrol et" etiketli, hiçbiri
+   sessizce "yazılabilir" sayılmıyor.
+
+Denetlenemeyen: kpssden.com çapraz kontrolü ağ erişimi gerektirir (son tam `gate`
+koşusunda 9/9 geçti); tahminler ölçüm değil, yayımlanmış hata payıyla tahmindir.
