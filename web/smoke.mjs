@@ -287,6 +287,34 @@ async function main() {
     const unvanShot = await client.send('Page.captureScreenshot', { format: 'png' });
     writeFileSync(join(SHOTS, 'kadrolar-unvan.png'), Buffer.from(unvanShot.data, 'base64'));
 
+    // güvenlik: paylaşım bağlantısındaki ?l= değeri DOM'a ham yazılmamalı (XSS)
+    const xssPayload = `<img src=x onerror="document.title='XSS'">`;
+    await client.send('Page.navigate', {
+      url: `http://127.0.0.1:${PORT}/uygulama.html?seviye=lisans&puan=85&l=${encodeURIComponent(xssPayload)}`,
+    });
+    await sleep(800);
+    const xssTitle = await evaluate(client, 'document.title');
+    const xssNodes = await evaluate(client, "document.querySelectorAll('#list img, #list script').length");
+    check('?l= yükü çalışmıyor (XSS yok)', xssTitle !== 'XSS' && xssNodes === 0, `title=${JSON.stringify(xssTitle)} · enjekte düğüm=${xssNodes}`);
+
+    // meşru paylaşım bağlantısı hâlâ çalışıyor mu (aşırı filtreleme kontrolü)
+    const realKods = JSON.parse(readFileSync(join(DIST, 'data', 'lisans.json'), 'utf8')).rows.slice(0, 3).map((r) => r.kod);
+    await client.send('Page.navigate', {
+      url: `http://127.0.0.1:${PORT}/uygulama.html?seviye=lisans&puan=85&l=${realKods.join(',')}`,
+    });
+    await sleep(800);
+    const sharedItems = await evaluate(client, "document.querySelectorAll('#list li').length");
+    check('geçerli ?l= bağlantısı listeyi kuruyor', sharedItems === realKods.length, `${sharedItems}/${realKods.length} öğe`);
+
+    // güvenlik başlıkları dist kökünde mi
+    const headersFile = join(DIST, '_headers');
+    const headersText = existsSync(headersFile) ? readFileSync(headersFile, 'utf8') : '';
+    check(
+      'güvenlik başlıkları (_headers) üretildi',
+      /Content-Security-Policy/.test(headersText) && /X-Content-Type-Options/.test(headersText),
+      existsSync(headersFile) ? 'dist/_headers var' : 'dist/_headers YOK',
+    );
+
     // dizinden gelen derin bağlantı: unvan önceden seçili ve satırlar süzülmüş olmalı
     await client.send('Page.navigate', { url: `http://127.0.0.1:${PORT}/uygulama.html?unvan=TEKN%C4%B0KER&puan=85` });
     await sleep(700);

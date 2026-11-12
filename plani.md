@@ -255,3 +255,28 @@ Sorulan soru: "uygulamadaki veriler doğru mu". Yapılan ölçümler:
 
 Denetlenemeyen: kpssden.com çapraz kontrolü ağ erişimi gerektirir (son tam `gate`
 koşusunda 9/9 geçti); tahminler ölçüm değil, yayımlanmış hata payıyla tahmindir.
+
+### Güvenlik denetimi (2026-11-12)
+
+**Düzeltildi — paylaşım bağlantısında XSS (yüksek).** `?l=` parametresi liste
+kodlarına ayrıştırılıyor, eşleşmeyen değer `row?.unvan ?? kod` üzerinden ham
+`innerHTML`'e yazılıyordu:
+`/uygulama.html?l=<img src=x onerror=...>` → tarayıcıda kod çalıştı (kanıt:
+`document.title` değişti). Düzeltme iki katmanlı: `?l=` ve localStorage listesi
+yalnızca veride var olan kadro kodlarını kabul ediyor; `innerHTML`'e giren tüm
+değerler `esc()` ile kaçırılıyor. Smoke'a regresyon kapısı eklendi.
+
+**Düzeltildi — güvenlik başlıkları yoktu.** `web/_headers` eklendi (CSP,
+HSTS, nosniff, X-Frame-Options, Referrer-Policy, Permissions-Policy, COOP);
+`build` bunu `dist/_headers` olarak kopyalıyor. CSP'nin siteyi bozmadığı
+headless tarayıcıda `securitypolicyviolation` dinlenerek doğrulandı: 3 sayfada
+0 ihlal, tablo/liste/süzgeç çalışıyor.
+
+**Düzeltildi — parametre doğrulama.** `?seviye=` beyaz listeye alındı,
+`?puan=`/`?program=` sonlu sayı kontrolünden geçiyor.
+
+**Açık kalan (rapor):** `pipeline/lib/http.mjs` yönlendirmeleri herhangi bir
+konağa takip ediyor, boyut sınırı ve konak beyaz listesi yok (yerel boru hattı
+için SSRF/DoS yüzeyi); paylaşım bağlantısı puanı ve 30 tercihin tamamını URL'de
+taşıyor (KVKK/gizlilik); `web/serve.mjs` yol koruması regex tabanlı (test
+edildi: açık yok, yalnız 127.0.0.1).

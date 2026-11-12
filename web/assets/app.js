@@ -4,6 +4,12 @@
 const MAX_TERCIH = 30;
 // 2025/2 lisans 990 satır: tavan tüm dönemleri kapsar, hiçbir satır gizlenmez
 const MAX_ROWS = 1200;
+const LEVELS = ['lisans', 'onlisans', 'ortaogretim'];
+
+// innerHTML'e giren her değer kaçırılır: ?l= bağlantısı gibi dış girdiler
+// satır verisiyle eşleşmezse ham metin olarak DOM'a yazılmamalı.
+const esc = (value) =>
+  String(value ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch]);
 // Durum dili katalogdan: LED (CSS ::before) + etiket + satırdaki eşik değeri.
 const BANDS = {
   garanti: { label: 'garanti' },
@@ -114,13 +120,13 @@ function renderTable() {
     const inList = state.list.includes(row.kod);
     tr.innerHTML = `
       <td>
-        <strong>${row.unvan ?? '—'}</strong>
-        <div class="sub">${row.kurum ?? '—'} · ${row.il ?? '—'}${row.tes ? ` / ${row.tes}` : ''}</div>
+        <strong>${esc(row.unvan ?? '—')}</strong>
+        <div class="sub">${esc(row.kurum ?? '—')} · ${esc(row.il ?? '—')}${row.tes ? ` / ${esc(row.tes)}` : ''}</div>
       </td>
       <td class="num">${row.knt ?? '—'}</td>
       <td class="num dim">${fmt(row.taban)}</td>
       <td class="num">${fmt(row.tahmin?.puan)}</td>
-      <td><span class="chip ${band}" title="çapa: ${row.tahmin?.source ?? 'yok'}">${meta.label}</span>
+      <td><span class="chip ${band}" title="çapa: ${esc(row.tahmin?.source ?? 'yok')}">${meta.label}</span>
         ${row.bos ? '<span class="chip">boş kaldı</span>' : ''}
         ${manual.length ? '<span class="chip manual" title="Bu satırda sertifika/özel şart var">kontrol et</span>' : ''}
       </td>
@@ -142,8 +148,8 @@ function renderList() {
       const band = bandOf(state.puan, row?.tahmin, sigma);
       return `<li>
         <span class="text">
-          <strong>${row?.unvan ?? kod}</strong>
-          <div class="sub">${row?.kurum ?? ''} · ${row?.il ?? ''} · taban ${fmt(row?.taban)}</div>
+          <strong>${esc(row?.unvan ?? kod)}</strong>
+          <div class="sub">${esc(row?.kurum ?? '')} · ${esc(row?.il ?? '')} · taban ${fmt(row?.taban)}</div>
         </span>
         <span class="chip ${band}">${BANDS[band].label}</span>
         <span class="actions">
@@ -210,7 +216,7 @@ function fillSelects() {
   const uniq = (field) => [...new Set(state.data.rows.map((r) => r[field]).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'tr'));
   const fill = (id, values, current, placeholder) => {
     const select = $(id);
-    select.innerHTML = `<option value="">${placeholder}</option>` + values.map((v) => `<option>${v}</option>`).join('');
+    select.innerHTML = `<option value="">${placeholder}</option>` + values.map((v) => `<option>${esc(v)}</option>`).join('');
     select.value = current;
   };
   fill('#il', uniq('il'), state.il, 'Tüm iller');
@@ -240,7 +246,8 @@ async function loadLevel(level) {
   state.level = level;
   try {
     const stored = JSON.parse(localStorage.getItem(`tp:list:${level}`) ?? '[]');
-    state.list = Array.isArray(stored) ? stored.slice(0, MAX_TERCIH) : [];
+    const known = new Set(state.data.rows.map((row) => row.kod));
+    state.list = Array.isArray(stored) ? stored.filter((kod) => known.has(kod)).slice(0, MAX_TERCIH) : [];
   } catch {
     state.list = [];
   }
@@ -351,21 +358,23 @@ async function main() {
       level = null;
     }
   }
-  level = level ?? 'lisans';
+  level = LEVELS.includes(level) ? level : 'lisans';
   $('#level').value = level;
-  const puan = params.get('puan');
-  if (puan) {
-    state.puan = Number(puan);
-    $('#puan').value = puan;
+  const puan = Number(params.get('puan'));
+  if (Number.isFinite(puan) && puan > 0 && puan <= 100) {
+    state.puan = puan;
+    $('#puan').value = String(puan);
   }
-  if (params.get('program')) state.programKod = Number(params.get('program'));
+  const program = Number(params.get('program'));
+  if (Number.isFinite(program) && program > 0) state.programKod = program;
   // kadro dizini sayfalarından gelen derin bağlantılar
   if (params.get('il')) state.il = params.get('il');
   if (params.get('unvan')) state.unvan = params.get('unvan');
   await loadLevel(level);
   const list = params.get('l');
   if (list) {
-    state.list = list.split(',').filter(Boolean).slice(0, MAX_TERCIH);
+    const known = new Set(state.data.rows.map((row) => row.kod));
+    state.list = list.split(',').filter((kod) => known.has(kod)).slice(0, MAX_TERCIH);
     renderList();
     renderTable();
   }

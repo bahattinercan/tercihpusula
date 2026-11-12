@@ -153,6 +153,8 @@ function main() {
   rmSync(DIST, { recursive: true, force: true });
   mkdirSync(join(DIST, 'data'), { recursive: true });
   cpSync(join(WEB, 'assets'), join(DIST, 'assets'), { recursive: true });
+  // güvenlik başlıkları: Cloudflare Pages / Netlify dist kökündeki _headers dosyasını okur
+  if (existsSync(join(WEB, '_headers'))) cpSync(join(WEB, '_headers'), join(DIST, '_headers'));
 
   const olderKeys = readdirSync(ROUNDS).filter((entry) => /^\d{4}-\d$/.test(entry) && entry < key).sort();
   const previousByLevel = {};
