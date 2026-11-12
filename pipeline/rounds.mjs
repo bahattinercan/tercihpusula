@@ -52,11 +52,23 @@ export async function discoverRounds() {
 //   2025/2: …/TERCIH2/minmaxlisans07012026.pdf  (also minmaxonl…, minmaxort…, sayisalbil…)
 // The on-lisans / ortaöğretim patterns must be tested before the lisans one,
 // because "minmaxlisans" contains "lisans" as a substring.
+// Level detection. Both filename families must be covered, and the i of
+// "lisans" is dropped by ÖSYM's ASCII folding in the newer scheme:
+//   2026/1: …puanlar-lsans-24q42vum.pdf, …puanlar-on-lsans-…, …puanlar-ortaogretm-…
+//   2025/2: …/TERCIH2/minmaxlisans07012026.pdf, minmaxonl…, minmaxort…
+// on-lisans / ortaöğretim are tested first because "minmaxlisans" contains "lisans".
 const LEVEL_PATTERNS = [
-  ['onlisans', /(minmaxonl|on-?l[ıi]sans|onlisans)/i],
+  ['onlisans', /(minmaxonl|on-l[ıi]?sans|onlisans)/i],
   ['ortaogretim', /(minmaxort|ortaogretm|ortaogretim)/i],
-  ['lisans', /(minmaxlisans|l[ıi]sans)/i],
+  ['lisans', /(minmaxlisans|l[ıi]?sans)/i],
 ];
+
+/** @returns {'summary'|'lisans'|'onlisans'|'ortaogretim'|null} */
+export function classifyDocumentUrl(url) {
+  if (/sayisal/i.test(url)) return 'summary';
+  const hit = LEVEL_PATTERNS.find(([, re]) => re.test(url));
+  return hit ? hit[0] : null;
+}
 
 /**
  * Document links of one round landing page.
@@ -68,12 +80,9 @@ export async function discoverDocuments(landingUrl) {
   let summary;
   for (const match of html.matchAll(/href="(https:\/\/dokuman\.osym\.gov\.tr\/[^"]+\.pdf)"/gi)) {
     const url = match[1];
-    if (/sayisal/i.test(url)) {
-      summary = url;
-      continue;
-    }
-    const hit = LEVEL_PATTERNS.find(([, re]) => re.test(url));
-    if (hit) docs[hit[0]] = url;
+    const kind = classifyDocumentUrl(url);
+    if (kind === 'summary') summary = url;
+    else if (kind) docs[kind] = url;
   }
   return { summary, levels: docs };
 }
