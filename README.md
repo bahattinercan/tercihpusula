@@ -23,7 +23,7 @@ node pipeline/run.mjs gate      # gates A (official totals) B (schema) C (diff) 
 node pipeline/run.mjs backtest  # rolling-origin backtest -> data/rounds/backtest.json
 node pipeline/run.mjs predict   # predictions for the newest round
 npm run build                   # static site -> dist/
-npm run smoke                   # headless-browser checks + screenshots (dist/.shots/)
+npm run smoke                   # headless-browser checks + screenshots (.shots/)
 npm test                        # parser, gate, eligibility and predictor tests
 npm run gate                    # everything above, in order
 ```

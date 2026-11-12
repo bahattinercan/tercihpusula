@@ -1,18 +1,19 @@
 // Smoke test: dist/ dosyalarını servis edip headless tarayıcıda gerçekten çalışıyor mu diye bakar.
 // Bağımlılık yok: Node 22'nin global WebSocket'i + CDP.
 //
-//   node web/smoke.mjs            # uygulama sayfasını test eder, dist/.shots/ altına ekran görüntüsü alır
+//   node web/smoke.mjs            # uygulama sayfasını test eder, <repo>/.shots/ altına ekran görüntüsü alır
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { spawn } from 'node:child_process';
-import { existsSync, mkdirSync, writeFileSync, readFileSync } from 'node:fs';
+import { existsSync, mkdirSync, writeFileSync, readFileSync, readdirSync } from 'node:fs';
 import { join, dirname, extname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 
 const WEB = dirname(fileURLToPath(import.meta.url));
 const DIST = join(dirname(WEB), 'dist');
-const SHOTS = join(DIST, '.shots');
+// dist dışında: dağıtım klasörüne test çıktısı girmesin
+const SHOTS = join(dirname(WEB), '.shots');
 const PORT = 4173;
 const DEBUG_PORT = 9333;
 
@@ -125,7 +126,7 @@ async function main() {
     [
       '--headless=new',
       `--remote-debugging-port=${DEBUG_PORT}`,
-      '--user-data-dir=' + join(tmpdir(), 'tercihpusula-smoke-profile'),
+      '--user-data-dir=' + join(tmpdir(), `tercihpusula-smoke-${Date.now()}`),
       '--no-first-run',
       '--disable-gpu',
       '--window-size=1280,1000',
@@ -168,11 +169,18 @@ async function main() {
     const onlyWritable = await evaluate(client, "document.querySelector('#onlyWritable').checked");
     check('“sadece yazabileceklerim” varsayılan açık', onlyWritable === true);
 
-    // ilk satırı listeye ekle
+    // ilk satırı listeye ekle: temiz URL + boş localStorage (önceki kontroller
+    // ?l= ile liste kurmuş olabilir, sıra bağımsızlığı için sıfırlanır)
+    await client.send('Page.navigate', { url: `http://127.0.0.1:${PORT}/uygulama.html?seviye=lisans&puan=85` });
+    await sleep(600);
+    await evaluate(client, "localStorage.clear()");
+    await client.send('Page.reload');
+    await sleep(800);
+    const beforeAdd = await evaluate(client, "document.querySelectorAll('#list li:not(.empty)').length");
     await evaluate(client, "document.querySelector('#rows button[data-add]').click()");
     await sleep(150);
-    const listCount = await evaluate(client, "document.querySelectorAll('#list li').length");
-    check('listeye ekleme çalışıyor', listCount === 1, `${listCount} öğe`);
+    const listCount = await evaluate(client, "document.querySelectorAll('#list li:not(.empty)').length");
+    check('listeye ekleme çalışıyor', listCount === beforeAdd + 1, `${beforeAdd} → ${listCount} öğe`);
 
     const probability = await evaluate(client, "document.querySelector('#probabilityValue').textContent.trim()");
     check('yerleşme olasılığı hesaplandı', probability.includes('%'), JSON.stringify(probability));
@@ -199,8 +207,22 @@ async function main() {
 
     // program seçimi yazılabilirlik sayısını daraltmalı
     await evaluate(client, "document.querySelector('#il').value=''; document.querySelector('#il').dispatchEvent(new Event('change'))");
-    const allRows = await evaluate(client, "document.querySelectorAll('#rows tr').length");
-    check('program filtresi uygulanıyor', allRows < 555, `${allRows} satır (program 3342)`);
+    const totalRows = await evaluate(client, "document.querySelectorAll('#rows tr').length");
+    const programLabel = await evaluate(client, `(() => {
+      const select = document.querySelector('#program');
+      const option = [...select.options].find((o) => o.value && o.textContent.trim().length > 6);
+      if (!option) return null;
+      select.value = option.value;
+      select.dispatchEvent(new Event('change'));
+      return option.textContent.trim();
+    })()`);
+    await sleep(200);
+    const programRows = await evaluate(client, "document.querySelectorAll('#rows tr').length");
+    check(
+      'program filtresi uygulanıyor',
+      programLabel !== null && programRows > 0 && programRows < totalRows,
+      `${totalRows} → ${programRows} satır · ${programLabel ?? 'program seçilemedi'}`,
+    );
 
     const overflow = await evaluate(
       client,
@@ -303,8 +325,18 @@ async function main() {
       url: `http://127.0.0.1:${PORT}/uygulama.html?seviye=lisans&puan=85&l=${realKods.join(',')}`,
     });
     await sleep(800);
-    const sharedItems = await evaluate(client, "document.querySelectorAll('#list li').length");
+    const sharedItems = await evaluate(client, "document.querySelectorAll('#list li:not(.empty)').length");
     check('geçerli ?l= bağlantısı listeyi kuruyor', sharedItems === realKods.length, `${sharedItems}/${realKods.length} öğe`);
+
+    // dağıtım hijyeni: dist kökünde yalnız yayımlanması gerekenler olmalı
+    const ALLOWED_ROOT = new Set([
+      'assets', 'data', 'kadrolar', '_headers', 'index.html', 'uygulama.html',
+      'metodoloji.html', 'veri-kaynaklari.html', 'bos-kalan-kadrolar.html',
+      '404.html', 'manifest.webmanifest', 'robots.txt', 'sitemap.xml',
+    ]);
+    const rootEntries = readdirSync(DIST);
+    const stray = rootEntries.filter((name) => !ALLOWED_ROOT.has(name));
+    check('dist kökünde yabancı dosya yok', stray.length === 0, stray.length ? `fazla: ${stray.join(', ')}` : `${rootEntries.length} giriş`);
 
     // güvenlik başlıkları dist kökünde mi
     const headersFile = join(DIST, '_headers');

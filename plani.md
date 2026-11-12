@@ -203,7 +203,7 @@ Garnitür kullanılmadı (3+ stil kimlik kaybı).
   latin + latin-ext), harici istek yok.
 - Bant durumu artık emoji değil: 7×7 LED + mono etiket; eşik değeri satırın "tahmin" sütununda.
 - Doğrulama: `npm run smoke` 14 kontrol (iki tema, 1280/390 px taşma yok) + ekran görüntüleri
-  `dist/.shots/` (ana-sayfa, uygulama, açık tema, mobil).
+  `.shots/` (ana-sayfa, uygulama, açık tema, mobil).
 
 ### Kadro dizini geliştirmesi (2026-11-12)
 
@@ -280,3 +280,29 @@ konağa takip ediyor, boyut sınırı ve konak beyaz listesi yok (yerel boru hat
 için SSRF/DoS yüzeyi); paylaşım bağlantısı puanı ve 30 tercihin tamamını URL'de
 taşıyor (KVKK/gizlilik); `web/serve.mjs` yol koruması regex tabanlı (test
 edildi: açık yok, yalnız 127.0.0.1).
+
+### Güvenlik denetimi — ikinci tur (2026-11-12)
+
+Ek bulgular ve düzeltmeler:
+
+- **CSP kendi kendine zarar veriyordu:** `onclick="this.select()"` (paylaşım alanı),
+  `onclick="window.print()"` ve `onsubmit="return false"` inline handler'ları
+  `script-src 'self'` tarafından bloklanıyordu — paylaşım alanı seçimi ve yazdır
+  sessizce çalışmıyordu. Dinleyiciler `app.js`'e taşındı, dist'te inline handler 0.
+- **`dist/.shots` dağıtım klasöründeydi** (1,1 MB ekran görüntüsü): `pages deploy dist`
+  bunları yayımlardı. Smoke artık `<repo>/.shots/`'a yazıyor; smoke'a "dist kökünde
+  yabancı dosya yok" kapısı eklendi.
+- **Yerel sunucu tek istekle çöküyordu:** `GET /%` → `decodeURIComponent` URIError →
+  süreç ölüyordu (DoS). Artık 400; yol koruması regex yerine `path.relative`.
+- **Terminal kaçış dizisi enjeksiyonu:** pipeline PDF metnini ham stderr'e yazıyordu,
+  gömülü ANSI/OSC dizisi çıktıyı gizleyebilirdi. `log()`/`fail()` kontrol
+  karakterlerini süzüyor.
+- `#puan` alanına `autocomplete="off"`.
+
+Doğrulanan temiz alanlar: build-time HTML enjeksiyonu (data'ya payload yazıp rebuild
+edildi → çıktı kaçırılmış), `?l=`/`?unvan=`/`?il=`/`?seviye=`/`?puan=` payload'ları
+(kod çalışmıyor, CSP ihlali 0), client JS'te href/src ataması yok, ReDoS yok
+(100k karakter 7 ms), pipeline dosya adları sabit sözlüklerden (yol kaçışı yok).
+
+Açık kalan: `http.mjs` konak beyaz listesi + boyut sınırı; paylaşım linki puan ve
+30 tercihi URL'de taşıyor (gizlilik); `style-src 'unsafe-inline'` zorunlu.

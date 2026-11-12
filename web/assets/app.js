@@ -260,6 +260,13 @@ async function loadLevel(level) {
 }
 
 function bind() {
+  // onclick yerine dinleyici: CSP inline handler'ları bloklar
+  const share = document.getElementById('share');
+  if (share) share.addEventListener('click', () => share.select());
+  const filters = document.getElementById('filters');
+  if (filters) filters.addEventListener('submit', (event) => event.preventDefault());
+  const printButton = document.getElementById('print');
+  if (printButton) printButton.addEventListener('click', () => window.print());
   $('#puan').addEventListener('input', (event) => {
     const value = Number(String(event.target.value).replace(',', '.'));
     state.puan = Number.isFinite(value) && value > 0 ? value : null;

@@ -2,7 +2,7 @@
 //   node web/serve.mjs [port]      (varsayılan 4174)
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
-import { join, dirname, extname, normalize } from 'node:path';
+import { join, dirname, extname, normalize, relative, isAbsolute } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const DIST = join(dirname(dirname(fileURLToPath(import.meta.url))), 'dist');
@@ -21,11 +21,24 @@ const MIME = {
 };
 
 createServer(async (req, res) => {
-  const url = new URL(req.url, `http://127.0.0.1:${PORT}`);
-  let path = decodeURIComponent(url.pathname);
+  // bozuk yüzde kodlaması (/% gibi) decodeURIComponent'i patlatıp süreci düşürüyordu
+  let path;
+  try {
+    const url = new URL(req.url, `http://127.0.0.1:${PORT}`);
+    path = decodeURIComponent(url.pathname);
+  } catch {
+    res.writeHead(400, { 'content-type': 'text/plain; charset=utf-8' }).end('bad request');
+    return;
+  }
   if (path === '/') path = '/index.html';
   if (path.endsWith('/')) path += 'index.html';
-  const file = join(DIST, normalize(path).replace(/^(\.\.[/\\])+/, ''));
+  // DIST dışına çıkan yol reddedilir (regex yerine göreli yol kontrolü)
+  const file = join(DIST, normalize(path));
+  const rel = relative(DIST, file);
+  if (rel.startsWith('..') || isAbsolute(rel)) {
+    res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' }).end('not found');
+    return;
+  }
   try {
     const body = await readFile(file);
     res.writeHead(200, {

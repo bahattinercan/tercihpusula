@@ -261,14 +261,14 @@ function main() {
 <h1>Tercih listesi</h1>
 <p class="lede">Puan → program → filtre → liste. Liste tarayıcınızda saklanır, sunucuya gönderilmez.</p>
 <div id="error" class="note" hidden></div>
-<form class="filters" onsubmit="return false">
+<form class="filters" id="filters" novalidate>
   <div class="full"><label for="program">mezun olduğunuz program</label>
     <select id="program"></select>
     <div id="programNote" class="hint" style="margin-top:4px"></div></div>
   <div><label for="level">öğrenim düzeyi</label>
     <select id="level"><option value="lisans">${LEVEL_LABEL.lisans}</option><option value="onlisans">${LEVEL_LABEL.onlisans}</option><option value="ortaogretim">${LEVEL_LABEL.ortaogretim}</option></select></div>
   <div><label for="puan">KPSS puanı</label>
-    <input id="puan" type="number" inputmode="decimal" step="0.00001" min="40" max="100" placeholder="82,45678"></div>
+    <input id="puan" type="number" inputmode="decimal" step="0.00001" min="40" max="100" placeholder="82,45678" autocomplete="off"></div>
   <div><label for="il">il</label><select id="il"></select></div>
   <div><label for="unvan">unvan</label><select id="unvan"></select></div>
   <div><label for="kurum">kurum</label><select id="kurum"></select></div>
@@ -293,10 +293,10 @@ function main() {
     <p id="probability" class="count" style="min-height:1.3em"></p>
     <div style="display:flex;gap:8px;margin-block:12px">
       <button class="ghost small" id="clear" type="button">listeyi temizle</button>
-      <button class="ghost small" type="button" onclick="window.print()">yazdır</button>
+      <button class="ghost small" type="button" id="print">yazdır</button>
     </div>
     <label for="share">paylaşılabilir bağlantı</label>
-    <input id="share" type="text" readonly onclick="this.select()">
+    <input id="share" type="text" readonly>
     <p style="font-size:12px;margin-top:8px">Sıralama listeyi yukarıdan aşağıya okur; en çok istediğinizi 1. sıraya yazmanın riski yoktur. Olasılık satır olasılıklarının birleşimidir ve tahmindir.</p>
   </aside>
 </div>`,
