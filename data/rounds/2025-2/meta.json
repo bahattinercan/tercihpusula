@@ -1,0 +1,40 @@
+{
+  "round": "2025/2",
+  "landing": "https://www.osym.gov.tr/kpss20252-bazi-kamu-kurum-ve-kuruluslarin-kadro-ve-pozisyonlarina-yerlestirme-sonuclarina-iliskin-sayisal-bilgiler",
+  "parser": "parse-results@1",
+  "levels": {
+    "lisans": {
+      "parsed": 990,
+      "uniqueCodes": 990,
+      "rejectedLines": 0,
+      "kurumWithoutSeparator": 0,
+      "rejectedSample": [],
+      "rows": 990,
+      "kontenjan": 1781,
+      "yerlesen": 1778,
+      "bosKalan": 3
+    },
+    "onlisans": {
+      "parsed": 570,
+      "uniqueCodes": 570,
+      "rejectedLines": 0,
+      "kurumWithoutSeparator": 0,
+      "rejectedSample": [],
+      "rows": 570,
+      "kontenjan": 1262,
+      "yerlesen": 1262,
+      "bosKalan": 0
+    },
+    "ortaogretim": {
+      "parsed": 248,
+      "uniqueCodes": 248,
+      "rejectedLines": 0,
+      "kurumWithoutSeparator": 0,
+      "rejectedSample": [],
+      "rows": 248,
+      "kontenjan": 689,
+      "yerlesen": 689,
+      "bosKalan": 0
+    }
+  }
+}

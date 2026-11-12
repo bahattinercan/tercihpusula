@@ -1,0 +1,58 @@
+{
+  "round": "2025/1",
+  "landing": "https://www.osym.gov.tr/kpss20251-bazi-kamu-kurum-ve-kuruluslarin-kadro-ve-pozisyonlarina-yerlestirme-sonuclarina-iliskin-sayisal-bilgiler",
+  "parser": "parse-results@1",
+  "levels": {
+    "lisans": {
+      "parsed": 798,
+      "uniqueCodes": 798,
+      "rejectedLines": 20,
+      "kurumWithoutSeparator": 0,
+      "rejectedSample": [
+        "En Küçük ve En Büyük Puanlar (Lisans)",
+        "En Küçük ve En Büyük Puanlar (Lisans)",
+        "En Küçük ve En Büyük Puanlar (Lisans)",
+        "En Küçük ve En Büyük Puanlar (Lisans)",
+        "En Küçük ve En Büyük Puanlar (Lisans)"
+      ],
+      "rows": 798,
+      "kontenjan": 1593,
+      "yerlesen": 1575,
+      "bosKalan": 18
+    },
+    "onlisans": {
+      "parsed": 418,
+      "uniqueCodes": 418,
+      "rejectedLines": 11,
+      "kurumWithoutSeparator": 0,
+      "rejectedSample": [
+        "En Küçük ve En Büyük Puanlar (Ön Lisans)",
+        "En      Küçük ve En Büyük Puanlar (Ön Lisans)",
+        "En        Küçük ve En Büyük Puanlar (Ön Lisans)",
+        "En        Küçük ve En Büyük Puanlar (Ön Lisans)",
+        "En        Küçük ve En Büyük Puanlar (Ön Lisans)"
+      ],
+      "rows": 418,
+      "kontenjan": 689,
+      "yerlesen": 689,
+      "bosKalan": 0
+    },
+    "ortaogretim": {
+      "parsed": 175,
+      "uniqueCodes": 175,
+      "rejectedLines": 5,
+      "kurumWithoutSeparator": 0,
+      "rejectedSample": [
+        "En Küçük ve En Büyük Puanlar (Ortaöğretim)",
+        "En Küçük ve En Büyük Puanlar (Ortaöğretim)",
+        "En Küçük ve En Büyük Puanlar (Ortaöğretim)",
+        "En Küçük ve En Büyük Puanlar (Ortaöğretim)",
+        "En Küçük ve En Büyük Puanlar (Ortaöğretim)"
+      ],
+      "rows": 175,
+      "kontenjan": 391,
+      "yerlesen": 391,
+      "bosKalan": 0
+    }
+  }
+}

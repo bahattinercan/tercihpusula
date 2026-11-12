@@ -1,0 +1,15 @@
+{
+  "name": "tercihpusula",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "fetch": "node pipeline/run.mjs fetch",
+    "parse": "node pipeline/run.mjs parse",
+    "gate": "node pipeline/run.mjs gate",
+    "all": "node pipeline/run.mjs all",
+    "test": "node --test",
+    "check": "npm run test && npm run all"
+  }
+}
