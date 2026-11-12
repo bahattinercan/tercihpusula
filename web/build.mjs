@@ -836,7 +836,7 @@ ${renderRowTable(sorted)}`,
   writeFileSync(join(DIST, 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map((u) => `  <url><loc>https://tercihpusula.com${u}</loc></url>`).join('\n')}\n</urlset>\n`);
   writeFileSync(join(DIST, 'robots.txt'), 'User-agent: *\nAllow: /\nSitemap: https://tercihpusula.com/sitemap.xml\n');
 
-  const pages = urls.length + 1;
+  const pages = urls.length;
   process.stderr.write(
     `[build] ${round}: ${pages} sayfa, ${Object.keys(levels).length} seviye, ` +
       `${Object.values(levels).reduce((sum, d) => sum + d.rows.length, 0)} kadro satırı, ${summary.lisans?.kontenjan ?? '?'} lisans kontenjanı\n`,
