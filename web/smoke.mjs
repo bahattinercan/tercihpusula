@@ -7,6 +7,7 @@ import { readFile } from 'node:fs/promises';
 import { spawn } from 'node:child_process';
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join, dirname, extname } from 'node:path';
+import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 
 const WEB = dirname(fileURLToPath(import.meta.url));
@@ -124,7 +125,7 @@ async function main() {
     [
       '--headless=new',
       `--remote-debugging-port=${DEBUG_PORT}`,
-      '--user-data-dir=' + join(SHOTS, 'profile'),
+      '--user-data-dir=' + join(tmpdir(), 'tercihpusula-smoke-profile'),
       '--no-first-run',
       '--disable-gpu',
       '--window-size=1280,1000',
