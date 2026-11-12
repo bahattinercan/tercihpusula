@@ -173,6 +173,8 @@ function syncUrl() {
   if (state.level) next.set('seviye', state.level);
   if (state.puan !== null) next.set('puan', String(state.puan));
   if (state.programKod) next.set('program', String(state.programKod));
+  if (state.il) next.set('il', state.il);
+  if (state.unvan) next.set('unvan', state.unvan);
   if (state.list.length) next.set('l', state.list.join(','));
   history.replaceState(null, '', `?${next}`);
   const share = $('#share');
@@ -334,7 +336,20 @@ function showError(error) {
 
 async function main() {
   bind();
-  const level = params.get('seviye') ?? 'lisans';
+  // seviye verilmemişse ve dizinden gelinmişse (unvan/il), o grubun en çok
+  // kadro verdiği seviyeyi seç — yoksa TEKNİKER gibi bir unvan lisansa düşer
+  let level = params.get('seviye');
+  const unvanParam = params.get('unvan');
+  const ilParam = params.get('il');
+  if (!level && (unvanParam || ilParam)) {
+    try {
+      const hint = await (await fetch('/data/dizin.json')).json();
+      level = (unvanParam && hint.unvan?.[unvanParam]) || (ilParam && hint.il?.[ilParam]) || null;
+    } catch {
+      level = null;
+    }
+  }
+  level = level ?? 'lisans';
   $('#level').value = level;
   const puan = params.get('puan');
   if (puan) {
@@ -342,6 +357,9 @@ async function main() {
     $('#puan').value = puan;
   }
   if (params.get('program')) state.programKod = Number(params.get('program'));
+  // kadro dizini sayfalarından gelen derin bağlantılar
+  if (params.get('il')) state.il = params.get('il');
+  if (params.get('unvan')) state.unvan = params.get('unvan');
   await loadLevel(level);
   const list = params.get('l');
   if (list) {

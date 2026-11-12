@@ -258,6 +258,14 @@ async function main() {
     const unvanShot = await client.send('Page.captureScreenshot', { format: 'png' });
     writeFileSync(join(SHOTS, 'kadrolar-unvan.png'), Buffer.from(unvanShot.data, 'base64'));
 
+    // dizinden gelen derin bağlantı: unvan önceden seçili ve satırlar süzülmüş olmalı
+    await client.send('Page.navigate', { url: `http://127.0.0.1:${PORT}/uygulama.html?unvan=TEKN%C4%B0KER&puan=85` });
+    await sleep(700);
+    const deepRows = await evaluate(client, "document.querySelectorAll('#rows tr').length");
+    const deepSelect = await evaluate(client, "document.querySelector('#unvan').value");
+    check('derin bağlantı unvanı seçiyor', deepSelect === 'TEKNİKER', deepSelect || '(boş)');
+    check('derin bağlantı satırları süzüyor', deepRows > 0 && deepRows < 400, `${deepRows} satır`);
+
     // ana sayfa görüntüsü
     await client.send('Emulation.clearDeviceMetricsOverride');
     await client.send('Page.navigate', { url: `http://127.0.0.1:${PORT}/` });

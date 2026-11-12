@@ -173,6 +173,26 @@ function main() {
     writeFileSync(join(DIST, 'data', `${level}.json`), JSON.stringify(data));
   }
 
+  // Derin bağlantı için: bir unvan/il hangi seviyede en çok kadro veriyor?
+  const levelHint = { unvan: {}, il: {} };
+  // her unvan/il için en çok kontenjan veren seviye
+  for (const field of ['unvan', 'il']) {
+    const winners = new Map();
+    for (const [level, data] of Object.entries(levels)) {
+      for (const row of data.rows) {
+        const key = row[field];
+        if (!key) continue;
+        const current = winners.get(key) ?? { level, kontenjan: 0 };
+        const total = (current.byLevel?.[level] ?? 0) + (row.knt ?? 0);
+        current.byLevel = { ...(current.byLevel ?? {}), [level]: total };
+        const best = Object.entries(current.byLevel).sort((a, b) => b[1] - a[1])[0];
+        winners.set(key, { level: best[0], kontenjan: best[1], byLevel: current.byLevel });
+      }
+    }
+    levelHint[field] = Object.fromEntries([...winners].map(([key, value]) => [key, value.level]));
+  }
+  writeFileSync(join(DIST, 'data', 'dizin.json'), JSON.stringify(levelHint));
+
   const totals = Object.values(levels).reduce(
     (acc, data) => ({
       rows: acc.rows + data.rows.length,
