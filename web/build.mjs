@@ -36,39 +36,44 @@ const NAV = [
 
 function layout({ title, description, current, body, round }) {
   return `<!doctype html>
-<html lang="tr">
+<html lang="tr" data-style="telemetry-grid">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${escapeHtml(title)}</title>
 <meta name="description" content="${escapeHtml(description)}">
+<link rel="preload" href="/assets/fonts/chakra-petch-600-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/fonts/inter-400-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/assets/site.css">
 <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
 <link rel="manifest" href="/manifest.webmanifest">
-<meta name="theme-color" content="#0e1116" media="(prefers-color-scheme: dark)">
-<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0a0f12" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#eef1f4" media="(prefers-color-scheme: light)">
 </head>
 <body>
-<header class="site">
-  <div class="wrap">
-    <a class="brand" href="/">Tercih<span>Pusulası</span></a>
-    <nav aria-label="Ana menü">
-      ${NAV.map(([href, label]) => `<a href="${href}"${href === current ? ' aria-current="page"' : ''}>${label}</a>`).join('\n      ')}
-    </nav>
+<div class="shell">
+<aside class="rail">
+  <a class="brand" href="/"><span class="mark" aria-hidden="true">TP</span>Tercih Pusulası</a>
+  <nav aria-label="Ana menü">
+    ${NAV.map(([href, label]) => `<a href="${href}"${href === current ? ' aria-current="page"' : ''}>${label}</a>`).join('\n    ')}
+  </nav>
+  <div class="rail-foot">
+    <a class="mono" style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;text-decoration:none" href="/uygulama.html">→ Listeye gir</a>
+    <span class="rail-meta">${round ? `KPSS ${escapeHtml(round)}` : 'veri yok'}</span>
   </div>
-</header>
-<main class="wrap">
+</aside>
+<main class="main">
+<div class="wrap">
 ${body}
-</main>
-<footer class="site">
-  <div class="wrap">
-    <p><strong>Resmî kaynak değildir.</strong> Tercih Pusulası bağımsız bir karar destek aracıdır; ÖSYM ile bağlantılı değildir.
-    Bağlayıcı olan, ilgili dönemin ÖSYM tercih kılavuzu ve <a href="https://ais.osym.gov.tr" rel="noopener">ais.osym.gov.tr</a>'dir.
-    ${round ? `Bu sayfa <strong>KPSS-${escapeHtml(round)}</strong> verisiyle üretildi.` : ''}
-    Tahminler geçmiş yerleştirmelere dayanır, yerleşme garantisi vermez.</p>
-    <p><a href="/metodoloji.html">Metodoloji ve hata payı</a> · <a href="/veri-kaynaklari.html">Veri kaynakları</a></p>
-  </div>
+<footer class="site-foot">
+  <p><strong style="color:var(--ink)">Resmî kaynak değildir.</strong> Tercih Pusulası bağımsız bir karar destek aracıdır; ÖSYM ile bağlantılı değildir.
+  Bağlayıcı olan, ilgili dönemin ÖSYM tercih kılavuzu ve <a href="https://ais.osym.gov.tr" rel="noopener">ais.osym.gov.tr</a>'dir.
+  Tahminler geçmiş yerleşmelere dayanır, yerleşme garantisi vermez.</p>
+  <p class="mono">${round ? `dönem ${escapeHtml(round)} · ` : ''}ölçüm: <a href="/metodoloji.html">metodoloji</a> · <a href="/veri-kaynaklari.html">veri ve kaynak</a></p>
 </footer>
+</div>
+</main>
+</div>
 ${current === '/uygulama.html' ? '<script src="/assets/app.js" defer></script>' : ''}
 </body>
 </html>`;
@@ -193,25 +198,28 @@ function main() {
         'KPSS merkezî yerleştirme için yazılabilir kadroları gör, 30 tercihli listeyi kur, tahmini taban puan ve yerleşme olasılığıyla riskini ölç.',
       current: '/',
       round,
-      body: `<h1>Puanını değil, <em>listeyi</em> planla.</h1>
-<p class="lede">KPSS tercihinde hata puan hesaplamada değil, listeyi kurarken yapılıyor: mezuniyetinize kapalı bir kadroyu yazmak, 30. sıradaki “garanti” satırla puanınızı yakmak, geçen dönem boş kalan kadroyu hiç görmemek.</p>
-<div class="stat-row">
-  <div class="stat"><b>${totals.rows}</b><span>kadro satırı (3 seviye)</span></div>
-  <div class="stat"><b>${totals.kontenjan}</b><span>kontenjan</span></div>
-  <div class="stat"><b>${totals.empty}</b><span>geçen dönem boş kalan satır</span></div>
-  <div class="stat"><b>${Object.values(levels).reduce((sum, d) => sum + d.programmes.length, 0)}</b><span>mezuniyet programı / alan</span></div>
+      body: `<p class="kicker">KPSS ${escapeHtml(round)} · ${totals.rows} kadro satırı · ${totals.kontenjan} kontenjan</p>
+<h1>Puanını değil,<br>listeyi planla.</h1>
+<p class="lede">KPSS tercihinde hata puan hesabında değil, listeyi kurarken çıkıyor: mezuniyetinize kapalı bir kadroyu yazmak, 30. sıradaki “garanti” satırla puanınızı yakmak, geçen dönem boş kalan kadroyu hiç görmemek.</p>
+<div class="tiles">
+  <div class="tile"><span class="label">kadro satırı</span><span class="value">${totals.rows}</span><span class="unit">3 seviye</span></div>
+  <div class="tile"><span class="label">kontenjan</span><span class="value">${totals.kontenjan}</span><span class="unit">toplam adet</span></div>
+  <div class="tile"><span class="label">boş kalan</span><span class="value">${totals.empty}</span><span class="unit">geçen dönem</span></div>
+  <div class="tile muted"><span class="label">program / alan</span><span class="value">${Object.values(levels).reduce((sum, d) => sum + d.programmes.length, 0)}</span><span class="unit">eşleşme sözlüğü</span></div>
 </div>
 <h2>Ne yapıyor</h2>
-<div class="card">
-  <ol>
-    <li><strong>Yazılabilir satırları ayıklar.</strong> Kılavuzun nitelik kodları ile mezun olduğunuz programı eşleştirir; sertifika/özel şart içeren satırları “kontrol et” diye işaretler.</li>
-    <li><strong>Satır bazında tahmin verir.</strong> Geçen dönemlerin gerçek taban puanlarından hareketle tahmini kapanış puanı ve ± aralığı.</li>
-    <li><strong>30 tercihli listeyi kurar.</strong> Sıralama, paylaşılabilir bağlantı, liste düzeyinde yerleşme olasılığı.</li>
-    <li><strong>Boş kalan kadroları gösterir.</strong> Geçen dönem kimsenin yerleşmediği satırlar, bu dönemin en yüksek fırsatları.</li>
-  </ol>
+<div class="tiles">
+  <div class="tile"><span class="label">01 · uygunluk</span><h3 style="margin:4px 0 0">Yazılabilir satırları ayıklar</h3><p>Kılavuzun nitelik kodları ile mezun olduğunuz programı eşleştirir. Sertifika ve özel şart içeren satırlar “kontrol et” olarak işaretlenir, sessizce geçmez.</p></div>
+  <div class="tile"><span class="label">02 · tahmin</span><h3 style="margin:4px 0 0">Satır bazında kapanış puanı</h3><p>Geçen dönemlerin gerçek taban puanlarından hareketle tahmini kapanış puanı ve ± aralığı. Hata payı <a href="/metodoloji.html">metodoloji</a> sayfasında yayımlanır.</p></div>
+  <div class="tile"><span class="label">03 · liste</span><h3 style="margin:4px 0 0">30 tercihli listeyi kurar</h3><p>Sıralama, paylaşılabilir bağlantı ve liste düzeyinde yerleşme olasılığı. Liste tarayıcınızda kalır.</p></div>
+  <div class="tile"><span class="label">04 · fırsat</span><h3 style="margin:4px 0 0">Boş kalan kadroları gösterir</h3><p>Geçen dönem kimsenin yerleşmediği ${totals.empty} satır. Bu dönemin en yüksek fırsat adayları.</p></div>
 </div>
 <h2>Başla</h2>
-<p><a href="/uygulama.html"><strong>Uygulamaya gir →</strong></a> · <a href="/metodoloji.html">Tahminler ne kadar güvenilir?</a></p>
+<p style="display:flex;flex-wrap:wrap;gap:8px;margin-block:16px 24px">
+  <a class="btn" href="/uygulama.html">Tercih listesi kur →</a>
+  <a class="btn ghost" href="/bos-kalan-kadrolar.html">Boş kalan kadrolar</a>
+  <a class="btn ghost" href="/kadrolar/">Kadro dizini</a>
+</p>
 <div class="note"><strong>Uyarı:</strong> Bu araç resmî değildir ve yerleşme garantisi vermez. Tahminlerin hata payı <a href="/metodoloji.html">metodoloji</a> sayfasında açıkça yayımlanır. Bağlayıcı kaynak ÖSYM tercih kılavuzudur.</div>
 `,
     }),
@@ -225,51 +233,50 @@ function main() {
       description: 'Puanınızı ve mezuniyet programınızı girin; yazılabilir kadroları filtreleyin, 30 tercihli listeyi kurun.',
       current: '/uygulama.html',
       round,
-      body: `<h1>Tercih listesi</h1>
+      body: `<p class="kicker">KPSS <span id="round">${escapeHtml(round)}</span> · merkezî yerleştirme</p>
+<h1>Tercih listesi</h1>
 <p class="lede">Puan → program → filtre → liste. Liste tarayıcınızda saklanır, sunucuya gönderilmez.</p>
 <div id="error" class="note" hidden></div>
 <form class="filters" onsubmit="return false">
-  <div><label for="level">Öğrenim düzeyi</label>
+  <div class="full"><label for="program">mezun olduğunuz program</label>
+    <select id="program"></select>
+    <div id="programNote" class="hint" style="margin-top:4px"></div></div>
+  <div><label for="level">öğrenim düzeyi</label>
     <select id="level"><option value="lisans">${LEVEL_LABEL.lisans}</option><option value="onlisans">${LEVEL_LABEL.onlisans}</option><option value="ortaogretim">${LEVEL_LABEL.ortaogretim}</option></select></div>
   <div><label for="puan">KPSS puanı</label>
     <input id="puan" type="number" inputmode="decimal" step="0.00001" min="40" max="100" placeholder="82,45678"></div>
-  <div class="wide"><label for="program">Mezun olduğunuz program</label>
-    <select id="program"></select>
-    <div id="programNote" style="font-size:.78rem;color:var(--ink-muted);margin-top:.25rem"></div></div>
-  <div><label for="il">İl</label><select id="il"></select></div>
-  <div><label for="unvan">Unvan</label><select id="unvan"></select></div>
-  <div><label for="kurum">Kurum</label><select id="kurum"></select></div>
+  <div><label for="il">il</label><select id="il"></select></div>
+  <div><label for="unvan">unvan</label><select id="unvan"></select></div>
+  <div><label for="kurum">kurum</label><select id="kurum"></select></div>
 </form>
 <div class="toolbar">
-  <label style="display:flex;gap:.4rem;align-items:center;color:var(--ink)"><input type="checkbox" id="onlyWritable" checked> sadece yazabileceklerim</label>
-  <label style="display:flex;gap:.4rem;align-items:center;color:var(--ink)"><input type="checkbox" id="onlyEmpty"> sadece geçen dönem boş kalanlar</label>
-  <input id="query" type="search" placeholder="kurum, unvan, il veya kadro kodu ara" style="max-width:22rem">
+  <label><input type="checkbox" id="onlyWritable" checked> sadece yazabileceklerim</label>
+  <label><input type="checkbox" id="onlyEmpty"> geçen dönem boş kalanlar</label>
+  <input id="query" type="search" placeholder="kurum, unvan, il veya kadro kodu ara" style="max-width:20rem">
   <span class="count" id="count"></span>
-  <span class="count" style="margin-inline-start:auto">Dönem: <b id="round"></b></span>
 </div>
 <div class="grid-2">
   <div class="table-wrap">
     <table>
-      <thead><tr><th>Kadro</th><th class="num">Kont.</th><th class="num">Geçen taban</th><th class="num">Tahmin</th><th>Durum</th><th></th></tr></thead>
+      <thead><tr><th>kadro</th><th class="num">kont.</th><th class="num">geçen taban</th><th class="num">tahmin</th><th>durum</th><th></th></tr></thead>
       <tbody id="rows"></tbody>
     </table>
   </div>
-  <aside>
-    <div class="card">
-      <h2 style="margin-top:0">Tercih listem</h2>
-      <div class="count" id="listMeta"></div>
-      <ul class="list" id="list"></ul>
-      <p id="probability" style="font-weight:600;margin-top:.8rem"></p>
-      <div class="toolbar">
-        <button class="ghost" id="clear" type="button">Listeyi temizle</button>
-        <button class="ghost" type="button" onclick="window.print()">Yazdır</button>
-      </div>
-      <label for="share">Paylaşılabilir bağlantı</label>
-      <input id="share" type="text" readonly onclick="this.select()">
-      <p style="font-size:.8rem;color:var(--ink-muted)">Sıralama listeyi yukarıdan aşağıya okur; en çok istediğinizi 1. sıraya yazmanın riski yoktur. Yerleşme olasılığı satır olasılıklarının birleşimidir ve tahmindir.</p>
+  <aside class="card">
+    <div class="panel-title"><h3>Tercih listem</h3><span class="stamp" id="listMeta"></span></div>
+    <ul class="list" id="list"></ul>
+    <div class="metric"><span class="value" id="probabilityValue"></span><span class="label">yerleşme olasılığı</span></div>
+    <p id="probability" class="count" style="min-height:1.3em"></p>
+    <div style="display:flex;gap:8px;margin-block:12px">
+      <button class="ghost small" id="clear" type="button">listeyi temizle</button>
+      <button class="ghost small" type="button" onclick="window.print()">yazdır</button>
     </div>
+    <label for="share">paylaşılabilir bağlantı</label>
+    <input id="share" type="text" readonly onclick="this.select()">
+    <p style="font-size:12px;margin-top:8px">Sıralama listeyi yukarıdan aşağıya okur; en çok istediğinizi 1. sıraya yazmanın riski yoktur. Olasılık satır olasılıklarının birleşimidir ve tahmindir.</p>
   </aside>
 </div>`,
+
     }),
   );
 
@@ -298,10 +305,10 @@ function main() {
 <p>Çapa sırası tahmin değil, ölçüm sonucudur: iki dönem çifti üzerinde yapılan geri testte “aynı unvan + il” çapası, “aynı kadro kodu” çapasından daha düşük hata verdi (aynı kadro kodu yeniden ilan edildiğinde nitelikleri ve dolayısıyla aday havuzu değişebiliyor).</p>
 <h2>Bantlar</h2>
 <table class="table-wrap"><thead><tr><th>Bant</th><th>Anlamı</th></tr></thead><tbody>
-<tr><td><span class="badge garanti">✓ garanti</span></td><td>Puanınız tahminin üst sınırının üzerinde.</td></tr>
-<tr><td><span class="badge hedef">◎ hedef</span></td><td>Puanınız tahminin üzerinde ama aralığın içinde.</td></tr>
-<tr><td><span class="badge riskli">! riskli</span></td><td>Puanınız tahminin altında, aralığın içinde.</td></tr>
-<tr><td><span class="badge uzak">× uzak</span></td><td>Puanınız tahminin alt sınırının altında.</td></tr>
+<tr><td><span class="chip garanti">garanti</span></td><td>Puanınız tahminin üst sınırının üzerinde.</td></tr>
+<tr><td><span class="chip hedef">hedef</span></td><td>Puanınız tahminin üzerinde ama aralığın içinde.</td></tr>
+<tr><td><span class="chip riskli">riskli</span></td><td>Puanınız tahminin altında, aralığın içinde.</td></tr>
+<tr><td><span class="chip uzak">uzak</span></td><td>Puanınız tahminin alt sınırının altında.</td></tr>
 </tbody></table>
 <h2>Geri test (yayımlanmış hata)</h2>
 <p>Aynı yöntemle geçmiş dönemler tahmin edilip gerçekleşen taban puanlarla karşılaştırıldı. Ölçü: ortalama mutlak hata (puan) ve ± aralığın isabet oranı.</p>

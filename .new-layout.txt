@@ -1,0 +1,44 @@
+function layout({ title, description, current, body, round }) {
+  return `<!doctype html>
+<html lang="tr" data-style="telemetry-grid">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${escapeHtml(title)}</title>
+<meta name="description" content="${escapeHtml(description)}">
+<link rel="preload" href="/assets/fonts/chakra-petch-600-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/fonts/inter-400-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/assets/site.css">
+<link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#0a0f12" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#eef1f4" media="(prefers-color-scheme: light)">
+</head>
+<body>
+<div class="shell">
+<aside class="rail">
+  <a class="brand" href="/"><span class="mark" aria-hidden="true">TP</span>Tercih Pusulası</a>
+  <nav aria-label="Ana menü">
+    ${NAV.map(([href, label]) => `<a href="${href}"${href === current ? ' aria-current="page"' : ''}>${label}</a>`).join('\n    ')}
+  </nav>
+  <div class="rail-foot">
+    <a class="mono" style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;text-decoration:none" href="/uygulama.html">→ Listeye gir</a>
+    <span class="rail-meta">${round ? `KPSS ${escapeHtml(round)}` : 'veri yok'}</span>
+  </div>
+</aside>
+<main class="main">
+<div class="wrap">
+${body}
+<footer class="site-foot">
+  <p><strong style="color:var(--ink)">Resmî kaynak değildir.</strong> Tercih Pusulası bağımsız bir karar destek aracıdır; ÖSYM ile bağlantılı değildir.
+  Bağlayıcı olan, ilgili dönemin ÖSYM tercih kılavuzu ve <a href="https://ais.osym.gov.tr" rel="noopener">ais.osym.gov.tr</a>'dir.
+  Tahminler geçmiş yerleşmelere dayanır, yerleşme garantisi vermez.</p>
+  <p class="mono">${round ? `dönem ${escapeHtml(round)} · ` : ''}ölçüm: <a href="/metodoloji.html">metodoloji</a> · <a href="/veri-kaynaklari.html">veri ve kaynak</a></p>
+</footer>
+</div>
+</main>
+</div>
+${current === '/uygulama.html' ? '<script src="/assets/app.js" defer></script>' : ''}
+</body>
+</html>`;
+}

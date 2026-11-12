@@ -1,0 +1,24 @@
+body: `<p class="kicker">KPSS ${escapeHtml(round)} · ${totals.rows} kadro satırı · ${totals.kontenjan} kontenjan</p>
+<h1>Puanını değil,<br>listeyi planla.</h1>
+<p class="lede">KPSS tercihinde hata puan hesabında değil, listeyi kurarken çıkıyor: mezuniyetinize kapalı bir kadroyu yazmak, 30. sıradaki “garanti” satırla puanınızı yakmak, geçen dönem boş kalan kadroyu hiç görmemek.</p>
+<div class="tiles">
+  <div class="tile"><span class="label">kadro satırı</span><span class="value">${totals.rows}</span><span class="unit">3 seviye</span></div>
+  <div class="tile"><span class="label">kontenjan</span><span class="value">${totals.kontenjan}</span><span class="unit">toplam adet</span></div>
+  <div class="tile"><span class="label">boş kalan</span><span class="value">${totals.empty}</span><span class="unit">geçen dönem</span></div>
+  <div class="tile muted"><span class="label">program / alan</span><span class="value">${Object.values(levels).reduce((sum, d) => sum + d.programmes.length, 0)}</span><span class="unit">eşleşme sözlüğü</span></div>
+</div>
+<h2>Ne yapıyor</h2>
+<div class="tiles">
+  <div class="tile"><span class="label">01 · uygunluk</span><h3 style="margin:4px 0 0">Yazılabilir satırları ayıklar</h3><p>Kılavuzun nitelik kodları ile mezun olduğunuz programı eşleştirir. Sertifika ve özel şart içeren satırlar “kontrol et” olarak işaretlenir, sessizce geçmez.</p></div>
+  <div class="tile"><span class="label">02 · tahmin</span><h3 style="margin:4px 0 0">Satır bazında kapanış puanı</h3><p>Geçen dönemlerin gerçek taban puanlarından hareketle tahmini kapanış puanı ve ± aralığı. Hata payı <a href="/metodoloji.html">metodoloji</a> sayfasında yayımlanır.</p></div>
+  <div class="tile"><span class="label">03 · liste</span><h3 style="margin:4px 0 0">30 tercihli listeyi kurar</h3><p>Sıralama, paylaşılabilir bağlantı ve liste düzeyinde yerleşme olasılığı. Liste tarayıcınızda kalır.</p></div>
+  <div class="tile"><span class="label">04 · fırsat</span><h3 style="margin:4px 0 0">Boş kalan kadroları gösterir</h3><p>Geçen dönem kimsenin yerleşmediği ${totals.empty} satır. Bu dönemin en yüksek fırsat adayları.</p></div>
+</div>
+<h2>Başla</h2>
+<p style="display:flex;flex-wrap:wrap;gap:8px;margin-block:16px 24px">
+  <a class="btn" href="/uygulama.html">Tercih listesi kur →</a>
+  <a class="btn ghost" href="/bos-kalan-kadrolar.html">Boş kalan kadrolar</a>
+  <a class="btn ghost" href="/kadrolar/">Kadro dizini</a>
+</p>
+<div class="note"><strong>Uyarı:</strong> Bu araç resmî değildir ve yerleşme garantisi vermez. Tahminlerin hata payı <a href="/metodoloji.html">metodoloji</a> sayfasında açıkça yayımlanır. Bağlayıcı kaynak ÖSYM tercih kılavuzudur.</div>
+`,

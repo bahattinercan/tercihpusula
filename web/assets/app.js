@@ -2,12 +2,13 @@
 // Veri /data/<seviye>.json içinde; 555 satırlık en büyük liste tarayıcıda rahat.
 
 const MAX_TERCIH = 30;
+// Durum dili katalogdan: LED (CSS ::before) + etiket + satırdaki eşik değeri.
 const BANDS = {
-  garanti: { label: 'garanti', icon: '✓' },
-  hedef: { label: 'hedef', icon: '◎' },
-  riskli: { label: 'riskli', icon: '!' },
-  uzak: { label: 'uzak', icon: '×' },
-  bilinmiyor: { label: 'tahmin yok', icon: '?' },
+  garanti: { label: 'garanti' },
+  hedef: { label: 'hedef' },
+  riskli: { label: 'riskli' },
+  uzak: { label: 'uzak' },
+  bilinmiyor: { label: 'tahmin yok' },
 };
 
 const state = {
@@ -111,17 +112,17 @@ function renderTable() {
     const inList = state.list.includes(row.kod);
     tr.innerHTML = `
       <td>
-        <div><strong>${row.unvan ?? '—'}</strong></div>
-        <div style="color:var(--ink-muted);font-size:.82rem">${row.kurum ?? '—'} · ${row.il ?? '—'}${row.tes ? ` / ${row.tes}` : ''}</div>
+        <strong>${row.unvan ?? '—'}</strong>
+        <div class="sub">${row.kurum ?? '—'} · ${row.il ?? '—'}${row.tes ? ` / ${row.tes}` : ''}</div>
       </td>
-      <td class="num">${row.knt}</td>
-      <td class="num">${fmt(row.taban)}</td>
+      <td class="num">${row.knt ?? '—'}</td>
+      <td class="num dim">${fmt(row.taban)}</td>
       <td class="num">${fmt(row.tahmin?.puan)}</td>
-      <td><span class="badge ${band}" title="${row.tahmin?.source ?? ''}"><span aria-hidden="true">${meta.icon}</span>${meta.label}</span>
-        ${row.bos ? '<span class="badge bilinmiyor">boş kaldı</span>' : ''}
-        ${manual.length ? '<span class="badge manual" title="Bu satırda sertifika/özel şart var">kontrol et</span>' : ''}
+      <td><span class="chip ${band}" title="çapa: ${row.tahmin?.source ?? 'yok'}">${meta.label}</span>
+        ${row.bos ? '<span class="chip">boş kaldı</span>' : ''}
+        ${manual.length ? '<span class="chip manual" title="Bu satırda sertifika/özel şart var">kontrol et</span>' : ''}
       </td>
-      <td><button class="ghost" data-add="${row.kod}" ${inList || state.list.length >= MAX_TERCIH ? 'disabled' : ''}>${inList ? 'listede' : '+ ekle'}</button></td>`;
+      <td><button class="ghost small" data-add="${row.kod}" ${inList || state.list.length >= MAX_TERCIH ? 'disabled' : ''}>${inList ? 'listede' : 'ekle'}</button></td>`;
     frag.append(tr);
   }
   body.replaceChildren(frag);
@@ -132,28 +133,30 @@ function renderList() {
   const ul = $('#list');
   const sigma = state.data?.sigma ?? 6;
   if (!state.list.length) {
-    ul.innerHTML = '<li class="empty" style="display:block">Liste boş. Tablodan “+ ekle” ile tercih ekleyin (en fazla 30).</li>';
+    ul.innerHTML = '<li class="empty">Liste boş. Tablodan “ekle” ile tercih ekleyin (en fazla 30).</li>';
   } else {
     ul.innerHTML = state.list.map((kod, index) => {
       const row = state.data.rows.find((r) => r.kod === kod);
       const band = bandOf(state.puan, row?.tahmin, sigma);
       return `<li>
-        <span>
+        <span class="text">
           <strong>${row?.unvan ?? kod}</strong>
-          <div style="color:var(--ink-muted);font-size:.8rem">${row?.kurum ?? ''} · ${row?.il ?? ''} · taban ${fmt(row?.taban)}</div>
+          <div class="sub">${row?.kurum ?? ''} · ${row?.il ?? ''} · taban ${fmt(row?.taban)}</div>
         </span>
-        <span class="badge ${band}">${BANDS[band].label}</span>
+        <span class="chip ${band}">${BANDS[band].label}</span>
         <span class="actions">
-          <button class="ghost" data-up="${index}" aria-label="Yukarı taşı" ${index === 0 ? 'disabled' : ''}>↑</button>
-          <button class="ghost" data-down="${index}" aria-label="Aşağı taşı" ${index === state.list.length - 1 ? 'disabled' : ''}>↓</button>
-          <button class="ghost" data-remove="${index}" aria-label="Listeden çıkar">×</button>
+          <button class="ghost small" data-up="${index}" aria-label="Yukarı taşı" ${index === 0 ? 'disabled' : ''}>↑</button>
+          <button class="ghost small" data-down="${index}" aria-label="Aşağı taşı" ${index === state.list.length - 1 ? 'disabled' : ''}>↓</button>
+          <button class="ghost small" data-remove="${index}" aria-label="Listeden çıkar">×</button>
         </span>
       </li>`;
     }).join('');
   }
   const p = listProbability();
-  $('#probability').textContent = state.list.length && state.puan !== null ? `Yerleşme olasılığı ≈ %${Math.round(p * 100)}` : '';
-  $('#listMeta').textContent = `${state.list.length}/${MAX_TERCIH} tercih`;
+  const hasEstimate = state.list.length > 0 && state.puan !== null;
+  $('#probabilityValue').textContent = hasEstimate ? `%${Math.round(p * 100)}` : '—';
+  $('#probability').textContent = hasEstimate ? 'tahmin · satır olasılıklarının birleşimi' : 'puan ve tercih girildikçe hesaplanır';
+  $('#listMeta').textContent = `${state.list.length}/${MAX_TERCIH}`;
   save();
 }
 

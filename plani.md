@@ -188,3 +188,19 @@ Verification: `npm run gate` → 38 unit tests, all data gates, build, and 14 he
 1. Register `tercihpusula.com` and point Cloudflare Pages at it.
 2. Add the 2026/2 guide document block to `data/reference/guide-docs.json` if the landing page misbehaves.
 3. Add KVKK aydınlatma text if accounts/crowd are ever introduced (not needed for v1: no server-side user data).
+
+### Tasarım dili (2026-11-12, ikinci tur)
+
+İlk sürüm "varsayılan HTML + koyu tema" görünümündeydi. style-lab kataloğundan
+**#46 `telemetry-grid`** (Veri & Gösterge bandı) seçildi: hairline ölçüm ızgarası (24px),
+tabular rakamlar, LED + etiket + eşik üçlüsüyle durum dili, ≤10px radius, gölge/blur yok.
+Seçim gerekçesi: ürünün çekirdeği tablo + bant + sayı; katalogda tam bu iş için tasarlanmış tek stil.
+Garnitür kullanılmadı (3+ stil kimlik kaybı).
+
+- Token değerleri `styles/46-telemetry-grid/tokens.json`'dan; koyu mod mekanizması
+  modern-web-guidance (`color-scheme` + `light-dark()`), yani sistem tercihini izliyor.
+- Fontlar yerelden servis ediliyor (`web/assets/fonts/`, Chakra Petch + Inter + IBM Plex Mono,
+  latin + latin-ext), harici istek yok.
+- Bant durumu artık emoji değil: 7×7 LED + mono etiket; eşik değeri satırın "tahmin" sütununda.
+- Doğrulama: `npm run smoke` 14 kontrol (iki tema, 1280/390 px taşma yok) + ekran görüntüleri
+  `dist/.shots/` (ana-sayfa, uygulama, açık tema, mobil).

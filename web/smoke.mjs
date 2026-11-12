@@ -174,8 +174,8 @@ async function main() {
     const listCount = await evaluate(client, "document.querySelectorAll('#list li').length");
     check('listeye ekleme çalışıyor', listCount === 1, `${listCount} öğe`);
 
-    const probability = await evaluate(client, "document.querySelector('#probability').textContent.trim()");
-    check('yerleşme olasılığı hesaplandı', probability.includes('%'), probability);
+    const probability = await evaluate(client, "document.querySelector('#probabilityValue').textContent.trim()");
+    check('yerleşme olasılığı hesaplandı', probability.includes('%'), JSON.stringify(probability));
 
     const shareUrl = await evaluate(client, "document.querySelector('#share').value");
     check('paylaşılabilir bağlantı üretildi', shareUrl.includes('l='), shareUrl.slice(0, 80));
@@ -221,6 +221,21 @@ async function main() {
     check('yatay taşma yok (390px)', mobileOverflow <= 0, `${mobileOverflow}px`);
     const mobileShot = await client.send('Page.captureScreenshot', { format: 'png' });
     writeFileSync(join(SHOTS, 'uygulama-mobil.png'), Buffer.from(mobileShot.data, 'base64'));
+
+    // açık tema
+    await client.send('Emulation.clearDeviceMetricsOverride');
+    await client.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-scheme', value: 'light' }] });
+    await sleep(300);
+    const lightShot = await client.send('Page.captureScreenshot', { format: 'png' });
+    writeFileSync(join(SHOTS, 'uygulama-acik-tema.png'), Buffer.from(lightShot.data, 'base64'));
+    await client.send('Emulation.setEmulatedMedia', { features: [] });
+
+    // ana sayfa görüntüsü
+    await client.send('Emulation.clearDeviceMetricsOverride');
+    await client.send('Page.navigate', { url: `http://127.0.0.1:${PORT}/` });
+    await sleep(500);
+    const indexShot = await client.send('Page.captureScreenshot', { format: 'png' });
+    writeFileSync(join(SHOTS, 'ana-sayfa.png'), Buffer.from(indexShot.data, 'base64'));
 
     // ana sayfa + metodoloji dumanı
     for (const path of ['/', '/metodoloji.html', '/veri-kaynaklari.html', '/bos-kalan-kadrolar.html', '/kadrolar/']) {
