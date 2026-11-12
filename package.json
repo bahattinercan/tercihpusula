@@ -3,13 +3,20 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "fetch": "node pipeline/run.mjs fetch",
     "parse": "node pipeline/run.mjs parse",
-    "gate": "node pipeline/run.mjs gate",
+    "gate": "npm test && node pipeline/run.mjs all --only=2026/1,2025/2,2025/1 && npm run build && npm run smoke",
     "all": "node pipeline/run.mjs all",
     "test": "node --test",
-    "check": "npm run test && npm run all"
+    "check": "npm run test && npm run all",
+    "guide": "node pipeline/run.mjs guide",
+    "backtest": "node pipeline/run.mjs backtest",
+    "predict": "node pipeline/run.mjs predict",
+    "build": "node web/build.mjs",
+    "smoke": "node web/smoke.mjs"
   }
 }

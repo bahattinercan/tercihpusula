@@ -1,0 +1,19 @@
+{
+  "_note": "Fallback map used when ÖSYM's guide landing page serves a generic document listing instead of the round's guide page (observed under repeated automated requests). The document host itself keeps working with a referer. Refresh this map per round; M5 runbook step 2 covers it.",
+  "2026/1": {
+    "base": "https://dokuman.osym.gov.tr/pdfdokuman/2026/KPSS/TERCIH1/",
+    "docs": {
+      "kilavuz": "kilavuz_t1d03072026.pdf",
+      "lisans-nitelik": "lisans-nitelik_t1d03072026.pdf",
+      "onlisans-nitelik": "onlisans-nitelik_t1d03072026.pdf",
+      "ortaogretim-nitelik": "ortaogretim-nitelik_t1d03072026.pdf",
+      "lisans-programlar": "mezunolunan-lisansprg_t1d03072026.pdf",
+      "onlisans-programlar": "molunan-Onlisansprg_t1d03072026.pdf",
+      "ortaogretim-alanlar": "ortaogretim-alandal_t1d03072026.pdf",
+      "ozelkosullar": "ozelkosullar_t1d03072026.pdf",
+      "tablo1": "tablo1_t1d03072026.pdf",
+      "tablo2": "tablo2_t1d03062026.pdf",
+      "tablo3": "tablo3_t1d03072026.pdf"
+    }
+  }
+}

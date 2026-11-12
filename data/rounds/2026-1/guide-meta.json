@@ -1,0 +1,71 @@
+{
+  "round": "2026/1",
+  "stats": {
+    "lisans": {
+      "programmes": 1269,
+      "programmesWithoutNitelik": 161,
+      "nitelikler": 524,
+      "nitelikWithoutProgramme": 0,
+      "programmeCodesNotInList": 0,
+      "kadro": 555,
+      "tablo": {
+        "parsed": 555,
+        "withNitelik": 555,
+        "withoutNitelik": 0,
+        "adetTotal": 977,
+        "rejectedLines": 18,
+        "rejectedSample": [
+          "SINIFI",
+          "*Aranan Nitelikleri mutlaka okuyunuz.                                                                                   ",
+          "*Aranan Nitelikleri mutlaka okuyunuz.                                                                                   ",
+          "*Aranan Nitelikleri mutlaka okuyunuz.                                                                                   ",
+          "*Aranan Nitelikleri mutlaka okuyunuz.                                                                                   "
+        ]
+      }
+    },
+    "onlisans": {
+      "programmes": 835,
+      "programmesWithoutNitelik": 46,
+      "nitelikler": 316,
+      "nitelikWithoutProgramme": 1,
+      "programmeCodesNotInList": 0,
+      "kadro": 410,
+      "tablo": {
+        "parsed": 410,
+        "withNitelik": 410,
+        "withoutNitelik": 0,
+        "adetTotal": 828,
+        "rejectedLines": 14,
+        "rejectedSample": [
+          "SINIFI",
+          "ANKARA MÜZİK VE GÜZEL SANATLAR",
+          "*Aranan Nitelikleri mutlaka okuyunuz.                                                                                   ",
+          "*Aranan Nitelikleri mutlaka okuyunuz.                                                                                   ",
+          "*Aranan Nitelikleri  mutlaka  okuyunuz.                                                                                 "
+        ]
+      }
+    },
+    "ortaogretim": {
+      "programmes": 111,
+      "programmesWithoutNitelik": 10,
+      "nitelikler": 95,
+      "nitelikWithoutProgramme": 1,
+      "programmeCodesNotInList": 3,
+      "kadro": 141,
+      "tablo": {
+        "parsed": 141,
+        "withNitelik": 141,
+        "withoutNitelik": 0,
+        "adetTotal": 278,
+        "rejectedLines": 7,
+        "rejectedSample": [
+          "SINIFI",
+          "*Aranan Nitelikleri  mutlaka okuyunuz.                                                                                  ",
+          "*Aranan Nitelikleri mutlaka okuyunuz.                                                                                   ",
+          "*Aranan Nitelikleri mutlaka okuyunuz.                                                                                   ",
+          "*Aranan Nitelikleri mutlaka okuyunuz.                                                                                   "
+        ]
+      }
+    }
+  }
+}

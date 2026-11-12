@@ -1,0 +1,491 @@
+// Statik site üretici — bağımlılık yok, Astro yerine düz Node.
+// Girdi: data/rounds/<son dönem>/{guide.json,predictions.json,<seviye>.json,summary.json}
+//        data/rounds/backtest.json
+// Çıktı: dist/ (HTML + JSON + assets), edge cache'e uygun tamamen statik.
+
+import { readFileSync, writeFileSync, mkdirSync, existsSync, rmSync, cpSync, readdirSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const WEB = dirname(fileURLToPath(import.meta.url));
+const ROOT = dirname(WEB);
+const ROUNDS = join(ROOT, 'data', 'rounds');
+const DIST = join(ROOT, 'dist');
+const LEVELS = ['lisans', 'onlisans', 'ortaogretim'];
+const LEVEL_LABEL = { lisans: 'Lisans (P3)', onlisans: 'Ön lisans (P93)', ortaogretim: 'Ortaöğretim (P94)' };
+
+const readJson = (path) => JSON.parse(readFileSync(path, 'utf8'));
+const slugify = (text) =>
+  text
+    .toLocaleLowerCase('tr')
+    .replaceAll('ı', 'i').replaceAll('ş', 's').replaceAll('ğ', 'g').replaceAll('ü', 'u')
+    .replaceAll('ö', 'o').replaceAll('ç', 'c').replaceAll('â', 'a').replaceAll('î', 'i')
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 70);
+
+const escapeHtml = (value) =>
+  String(value ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch]);
+const fmt = (value) => (value === null || value === undefined ? '—' : value.toFixed(3).replace('.', ','));
+
+const NAV = [
+  ['/uygulama.html', 'Uygulama'],
+  ['/kadrolar/', 'Kadrolar'],
+  ['/bos-kalan-kadrolar.html', 'Boş kalan kadrolar'],
+  ['/metodoloji.html', 'Metodoloji'],
+  ['/veri-kaynaklari.html', 'Veri ve kaynak'],
+];
+
+function layout({ title, description, current, body, round }) {
+  return `<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${escapeHtml(title)}</title>
+<meta name="description" content="${escapeHtml(description)}">
+<link rel="stylesheet" href="/assets/site.css">
+<link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#0e1116" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+</head>
+<body>
+<header class="site">
+  <div class="wrap">
+    <a class="brand" href="/">Tercih<span>Pusulası</span></a>
+    <nav aria-label="Ana menü">
+      ${NAV.map(([href, label]) => `<a href="${href}"${href === current ? ' aria-current="page"' : ''}>${label}</a>`).join('\n      ')}
+    </nav>
+  </div>
+</header>
+<main class="wrap">
+${body}
+</main>
+<footer class="site">
+  <div class="wrap">
+    <p><strong>Resmî kaynak değildir.</strong> Tercih Pusulası bağımsız bir karar destek aracıdır; ÖSYM ile bağlantılı değildir.
+    Bağlayıcı olan, ilgili dönemin ÖSYM tercih kılavuzu ve <a href="https://ais.osym.gov.tr" rel="noopener">ais.osym.gov.tr</a>'dir.
+    ${round ? `Bu sayfa <strong>KPSS-${escapeHtml(round)}</strong> verisiyle üretildi.` : ''}
+    Tahminler geçmiş yerleştirmelere dayanır, yerleşme garantisi vermez.</p>
+    <p><a href="/metodoloji.html">Metodoloji ve hata payı</a> · <a href="/veri-kaynaklari.html">Veri kaynakları</a></p>
+  </div>
+</footer>
+${current === '/uygulama.html' ? '<script src="/assets/app.js" defer></script>' : ''}
+</body>
+</html>`;
+}
+
+function latestRound() {
+  const keys = readdirSync(ROUNDS).filter((entry) => /^\d{4}-\d$/.test(entry)).sort();
+  const key = keys.at(-1);
+  if (!key) throw new Error('no parsed round found under data/rounds — run the pipeline first');
+  return { key, round: key.replace('-', '/') };
+}
+
+function buildLevelData(key, level, guide, predictions, sigma, previousByKod) {
+  const results = existsSync(join(ROUNDS, key, `${level}.json`)) ? readJson(join(ROUNDS, key, `${level}.json`)).rows : [];
+  const levelGuide = guide.levels[level];
+  if (!levelGuide) return null;
+  const resultByKod = new Map(results.map((row) => [row.kod, row]));
+
+  const programmeToNitelik = {};
+  for (const entry of levelGuide.nitelik) {
+    for (const kod of entry.programKodlari) {
+      programmeToNitelik[kod] ??= [];
+      programmeToNitelik[kod].push(entry.kod);
+    }
+  }
+
+  // Yeni dönemde henüz sonuç dosyası olmaz: o zaman kadro bilgisi tablodan,
+  // sarılmış hücreler yüzünden eksikse aynı kadro kodunun geçmiş dönem
+  // kaydından tamamlanır. Kaynak her satırda işaretlenir.
+  const rows = Object.entries(levelGuide.kadro).map(([kod, nit]) => {
+    const result = resultByKod.get(kod);
+    const detail = levelGuide.kadroDetay?.[kod] ?? {};
+    const previous = previousByKod.get(kod);
+    const pick = (field) => result?.[field] ?? previous?.[field] ?? detail[field] ?? null;
+    return {
+      kod,
+      kurum: pick('kurum'),
+      il: pick('il'),
+      tes: result?.teskilat ?? previous?.teskilat ?? detail.teskilat ?? null,
+      unvan: pick('unvan'),
+      knt: result?.kontenjan ?? detail.kontenjan ?? null,
+      nit,
+      taban: result?.minPuan ?? null,
+      bos: result ? result.yerlesen === 0 : false,
+      tahmin: predictions.levels?.[level]?.[kod] ?? null,
+      kaynak: result ? 'sonuc' : previous ? 'gecmis' : 'tablo',
+    };
+  });
+
+  return {
+    round: key.replace('-', '/'),
+    level,
+    sigma,
+    programmes: levelGuide.programmes.map((p) => ({ k: p.kod, a: p.ad })),
+    nitelik: Object.fromEntries(levelGuide.nitelik.map((n) => [n.kod, { t: n.tanim, k: n.kind, c: n.programKodlari }])),
+    programNitelik: programmeToNitelik,
+    rows,
+  };
+}
+
+function writePage(path, html) {
+  const file = join(DIST, path);
+  mkdirSync(dirname(file), { recursive: true });
+  writeFileSync(file, html);
+}
+
+function main() {
+  const { key, round } = latestRound();
+  const guide = readJson(join(ROUNDS, key, 'guide.json'));
+  const predictions = existsSync(join(ROUNDS, key, 'predictions.json')) ? readJson(join(ROUNDS, key, 'predictions.json')) : { levels: {} };
+  const backtest = existsSync(join(ROUNDS, 'backtest.json')) ? readJson(join(ROUNDS, 'backtest.json')) : null;
+  const sigmaByLevel = backtest?.sigma ?? {};
+  const summary = existsSync(join(ROUNDS, key, 'summary.json')) ? readJson(join(ROUNDS, key, 'summary.json')).levels : {};
+
+  rmSync(DIST, { recursive: true, force: true });
+  mkdirSync(join(DIST, 'data'), { recursive: true });
+  cpSync(join(WEB, 'assets'), join(DIST, 'assets'), { recursive: true });
+
+  const olderKeys = readdirSync(ROUNDS).filter((entry) => /^\d{4}-\d$/.test(entry) && entry < key).sort();
+  const previousByLevel = {};
+  for (const level of LEVELS) {
+    const map = new Map();
+    for (const older of olderKeys) {
+      const file = join(ROUNDS, older, `${level}.json`);
+      if (!existsSync(file)) continue;
+      for (const row of readJson(file).rows) map.set(row.kod, row);
+    }
+    previousByLevel[level] = map;
+  }
+
+  const levels = {};
+  for (const level of LEVELS) {
+    const data = buildLevelData(key, level, guide, predictions, sigmaByLevel[level] ?? 6, previousByLevel[level]);
+    if (!data) continue;
+    levels[level] = data;
+    writeFileSync(join(DIST, 'data', `${level}.json`), JSON.stringify(data));
+  }
+
+  const totals = Object.values(levels).reduce(
+    (acc, data) => ({
+      rows: acc.rows + data.rows.length,
+      kontenjan: acc.kontenjan + data.rows.reduce((sum, row) => sum + (row.knt ?? 0), 0),
+      empty: acc.empty + data.rows.filter((row) => row.bos).length,
+    }),
+    { rows: 0, kontenjan: 0, empty: 0 },
+  );
+
+  const backtestRows = (backtest?.summary ?? [])
+    .map(
+      (entry) => `<tr><td>${LEVEL_LABEL[entry.level]}</td><td class="num">${entry.compared}</td>
+      <td class="num">${entry.mae?.toFixed(2) ?? '—'}</td><td class="num">±${(backtest.sigma[entry.level] ?? 0).toFixed(2)}</td>
+      <td class="num">${entry.coverage ? `%${Math.round(entry.coverage * 100)}` : '—'}</td></tr>`,
+    )
+    .join('');
+
+  // ---- ana sayfa
+  writePage(
+    'index.html',
+    layout({
+      title: 'Tercih Pusulası — KPSS tercih listesi karar desteği',
+      description:
+        'KPSS merkezî yerleştirme için yazılabilir kadroları gör, 30 tercihli listeyi kur, tahmini taban puan ve yerleşme olasılığıyla riskini ölç.',
+      current: '/',
+      round,
+      body: `<h1>Puanını değil, <em>listeyi</em> planla.</h1>
+<p class="lede">KPSS tercihinde hata puan hesaplamada değil, listeyi kurarken yapılıyor: mezuniyetinize kapalı bir kadroyu yazmak, 30. sıradaki “garanti” satırla puanınızı yakmak, geçen dönem boş kalan kadroyu hiç görmemek.</p>
+<div class="stat-row">
+  <div class="stat"><b>${totals.rows}</b><span>kadro satırı (3 seviye)</span></div>
+  <div class="stat"><b>${totals.kontenjan}</b><span>kontenjan</span></div>
+  <div class="stat"><b>${totals.empty}</b><span>geçen dönem boş kalan satır</span></div>
+  <div class="stat"><b>${Object.values(levels).reduce((sum, d) => sum + d.programmes.length, 0)}</b><span>mezuniyet programı / alan</span></div>
+</div>
+<h2>Ne yapıyor</h2>
+<div class="card">
+  <ol>
+    <li><strong>Yazılabilir satırları ayıklar.</strong> Kılavuzun nitelik kodları ile mezun olduğunuz programı eşleştirir; sertifika/özel şart içeren satırları “kontrol et” diye işaretler.</li>
+    <li><strong>Satır bazında tahmin verir.</strong> Geçen dönemlerin gerçek taban puanlarından hareketle tahmini kapanış puanı ve ± aralığı.</li>
+    <li><strong>30 tercihli listeyi kurar.</strong> Sıralama, paylaşılabilir bağlantı, liste düzeyinde yerleşme olasılığı.</li>
+    <li><strong>Boş kalan kadroları gösterir.</strong> Geçen dönem kimsenin yerleşmediği satırlar, bu dönemin en yüksek fırsatları.</li>
+  </ol>
+</div>
+<h2>Başla</h2>
+<p><a href="/uygulama.html"><strong>Uygulamaya gir →</strong></a> · <a href="/metodoloji.html">Tahminler ne kadar güvenilir?</a></p>
+<div class="note"><strong>Uyarı:</strong> Bu araç resmî değildir ve yerleşme garantisi vermez. Tahminlerin hata payı <a href="/metodoloji.html">metodoloji</a> sayfasında açıkça yayımlanır. Bağlayıcı kaynak ÖSYM tercih kılavuzudur.</div>
+`,
+    }),
+  );
+
+  // ---- uygulama
+  writePage(
+    'uygulama.html',
+    layout({
+      title: 'Tercih listesi kur — Tercih Pusulası',
+      description: 'Puanınızı ve mezuniyet programınızı girin; yazılabilir kadroları filtreleyin, 30 tercihli listeyi kurun.',
+      current: '/uygulama.html',
+      round,
+      body: `<h1>Tercih listesi</h1>
+<p class="lede">Puan → program → filtre → liste. Liste tarayıcınızda saklanır, sunucuya gönderilmez.</p>
+<div id="error" class="note" hidden></div>
+<form class="filters" onsubmit="return false">
+  <div><label for="level">Öğrenim düzeyi</label>
+    <select id="level"><option value="lisans">${LEVEL_LABEL.lisans}</option><option value="onlisans">${LEVEL_LABEL.onlisans}</option><option value="ortaogretim">${LEVEL_LABEL.ortaogretim}</option></select></div>
+  <div><label for="puan">KPSS puanı</label>
+    <input id="puan" type="number" inputmode="decimal" step="0.00001" min="40" max="100" placeholder="82,45678"></div>
+  <div class="wide"><label for="program">Mezun olduğunuz program</label>
+    <select id="program"></select>
+    <div id="programNote" style="font-size:.78rem;color:var(--ink-muted);margin-top:.25rem"></div></div>
+  <div><label for="il">İl</label><select id="il"></select></div>
+  <div><label for="unvan">Unvan</label><select id="unvan"></select></div>
+  <div><label for="kurum">Kurum</label><select id="kurum"></select></div>
+</form>
+<div class="toolbar">
+  <label style="display:flex;gap:.4rem;align-items:center;color:var(--ink)"><input type="checkbox" id="onlyWritable" checked> sadece yazabileceklerim</label>
+  <label style="display:flex;gap:.4rem;align-items:center;color:var(--ink)"><input type="checkbox" id="onlyEmpty"> sadece geçen dönem boş kalanlar</label>
+  <input id="query" type="search" placeholder="kurum, unvan, il veya kadro kodu ara" style="max-width:22rem">
+  <span class="count" id="count"></span>
+  <span class="count" style="margin-inline-start:auto">Dönem: <b id="round"></b></span>
+</div>
+<div class="grid-2">
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Kadro</th><th class="num">Kont.</th><th class="num">Geçen taban</th><th class="num">Tahmin</th><th>Durum</th><th></th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+  <aside>
+    <div class="card">
+      <h2 style="margin-top:0">Tercih listem</h2>
+      <div class="count" id="listMeta"></div>
+      <ul class="list" id="list"></ul>
+      <p id="probability" style="font-weight:600;margin-top:.8rem"></p>
+      <div class="toolbar">
+        <button class="ghost" id="clear" type="button">Listeyi temizle</button>
+        <button class="ghost" type="button" onclick="window.print()">Yazdır</button>
+      </div>
+      <label for="share">Paylaşılabilir bağlantı</label>
+      <input id="share" type="text" readonly onclick="this.select()">
+      <p style="font-size:.8rem;color:var(--ink-muted)">Sıralama listeyi yukarıdan aşağıya okur; en çok istediğinizi 1. sıraya yazmanın riski yoktur. Yerleşme olasılığı satır olasılıklarının birleşimidir ve tahmindir.</p>
+    </div>
+  </aside>
+</div>`,
+    }),
+  );
+
+  const gateReport = existsSync(join(ROUNDS, 'gate-report.json')) ? readJson(join(ROUNDS, 'gate-report.json')) : [];
+  const gateFRows = ['lisans', 'onlisans', 'ortaogretim']
+    .map((level) => {
+      const entry = gateReport.find((r) => r.name === 'F' && r.level === level);
+      if (!entry?.rates) return '';
+      const pct = (value) => (value === null || value === undefined ? '—' : `%${(value * 100).toFixed(1)}`);
+      return `<tr><td>${LEVEL_LABEL[level]}</td><td class="num">${pct(entry.rates.il)}</td><td class="num">${pct(entry.rates.kontenjan)}</td><td class="num">${pct(entry.rates.unvan)}</td><td class="num">${pct(entry.rates.kurum)}</td></tr>`;
+    })
+    .join('');
+
+  // ---- metodoloji
+  writePage(
+    'metodoloji.html',
+    layout({
+      title: 'Metodoloji ve hata payı — Tercih Pusulası',
+      description: 'Tahmini taban puan nasıl hesaplanır, geçmiş dönemlerde ne kadar hata yaptı, bantlar ne anlama gelir.',
+      current: '/metodoloji.html',
+      round,
+      body: `<h1>Metodoloji</h1>
+<p class="lede">Bu sayfa, üründeki her sayının nereden geldiğini ve ne kadar yanılabileceğini açıklar. Gizli model yok.</p>
+<h2>Tahmini taban puan</h2>
+<p>Bir kadro satırı için sırayla şu üç çapa denenir: <strong>(1)</strong> aynı unvan + aynı ildeki satırların geçen dönem taban puanlarının ortancası, <strong>(2)</strong> aynı kadro kodunun geçen dönem taban puanı, <strong>(3)</strong> aynı unvanın ülke genelindeki ortancası. Bulunan değer, kontenjan değişimine göre küçük bir düzeltme alır (kontenjan artarsa kapanış puanı aşağı).</p>
+<p>Çapa sırası tahmin değil, ölçüm sonucudur: iki dönem çifti üzerinde yapılan geri testte “aynı unvan + il” çapası, “aynı kadro kodu” çapasından daha düşük hata verdi (aynı kadro kodu yeniden ilan edildiğinde nitelikleri ve dolayısıyla aday havuzu değişebiliyor).</p>
+<h2>Bantlar</h2>
+<table class="table-wrap"><thead><tr><th>Bant</th><th>Anlamı</th></tr></thead><tbody>
+<tr><td><span class="badge garanti">✓ garanti</span></td><td>Puanınız tahminin üst sınırının üzerinde.</td></tr>
+<tr><td><span class="badge hedef">◎ hedef</span></td><td>Puanınız tahminin üzerinde ama aralığın içinde.</td></tr>
+<tr><td><span class="badge riskli">! riskli</span></td><td>Puanınız tahminin altında, aralığın içinde.</td></tr>
+<tr><td><span class="badge uzak">× uzak</span></td><td>Puanınız tahminin alt sınırının altında.</td></tr>
+</tbody></table>
+<h2>Geri test (yayımlanmış hata)</h2>
+<p>Aynı yöntemle geçmiş dönemler tahmin edilip gerçekleşen taban puanlarla karşılaştırıldı. Ölçü: ortalama mutlak hata (puan) ve ± aralığın isabet oranı.</p>
+<div class="table-wrap"><table><thead><tr><th>Düzey</th><th class="num">Karşılaştırma</th><th class="num">Ortalama hata</th><th class="num">Aralık</th><th class="num">Aralık isabeti</th></tr></thead><tbody>${backtestRows || '<tr><td colspan="5">Geri test verisi yok.</td></tr>'}</tbody></table></div>
+<p style="font-size:.9rem;color:var(--ink-muted)">Aralık isabeti, gerçekleşen taban puanın ± aralık içinde kalma oranıdır. Bantlar bu aralıktan türetilir; yani “garanti” etiketi %100 değil, aralık dışına taşma olasılığının düşük olduğu anlamına gelir.</p>
+<h2>Yerleşme olasılığı</h2>
+<p>Satır olasılığı, puanınızın tahmin etrafındaki dağılımda nerede durduğuna bağlı lojistik bir eğridir. Liste olasılığı, satırların bağımsız olmadığı varsayımıyla <code>1 − Π(1 − pᵢ)</code> olarak birleştirilir; bu üst sınır eğilimli bir yaklaşımdır ve tercih sırasını hesaba katmaz. Bu yüzden ekranda “≈” ile gösterilir.</p>
+<h2>Veri kalitesi (tablo ↔ sonuç)</h2>
+<p>Kadro tablosu PDF'inde uzun hücreler alt satıra taşıyor. Aynı dönemin sonuç belgeleriyle karşılaştırıldığında alan bazında eşleşme oranı şöyle:</p>
+<div class="table-wrap"><table><thead><tr><th>Düzey</th><th class="num">İl</th><th class="num">Kontenjan</th><th class="num">Unvan</th><th class="num">Kurum</th></tr></thead><tbody>${gateFRows}</tbody></table></div>
+<p style="font-size:.9rem;color:var(--ink-muted)">İl ve kontenjan kimlik taşıdığı için %99,5 altına düşerse veri yayımlanmaz; unvan ve kurum metni ise taşan hücrelerden etkilenir ve geçmiş dönem kaydıyla tamamlanır. Satır kimliği her zaman ÖSYM kadro kodudur.</p>
+<h2>Yazılabilirlik</h2>
+<p>Kılavuzun nitelik kodları, mezun olunan programla eşleştirilir. Sertifika, ehliyet veya “Bakınız Başvurma Özel Şartları” içeren kodlar otomatik olarak geçmiş sayılmaz; satır “kontrol et” etiketiyle gösterilir. Nihai doğrulama her zaman ÖSYM tercih ekranında ve kılavuzda yapılmalıdır.</p>`,
+    }),
+  );
+
+  // ---- veri kaynakları
+  writePage(
+    'veri-kaynaklari.html',
+    layout({
+      title: 'Veri kaynakları — Tercih Pusulası',
+      description: 'Kadro tabloları, taban puanlar ve nitelik kodları hangi ÖSYM belgelerinden üretildi.',
+      current: '/veri-kaynaklari.html',
+      round,
+      body: `<h1>Veri ve kaynak</h1>
+<p class="lede">Tüm sayılar ÖSYM'nin kamuya açık belgelerinden üretilir; her dönem değişmez bir anlık görüntü olarak saklanır.</p>
+<div class="table-wrap"><table><thead><tr><th>Veri</th><th>Kaynak</th></tr></thead><tbody>
+<tr><td>Kadro tabloları ve aranan nitelik kodları</td><td>ÖSYM tercih kılavuzu Tablo-1/2/3</td></tr>
+<tr><td>Nitelik kodu sözlüğü</td><td>ÖSYM nitelik kodları ekleri (düzey başına ayrı dosya)</td></tr>
+<tr><td>Mezun olunan program / alan listesi</td><td>ÖSYM mezun olunan alan listeleri</td></tr>
+<tr><td>Gerçekleşen en küçük–en büyük puanlar</td><td>ÖSYM yerleştirme sonuçları (düzey başına ayrı dosya)</td></tr>
+<tr><td>Kontenjan / yerleşen / boş toplamları</td><td>ÖSYM “Yerleştirme Sonuçlarına İlişkin Sayısal Bilgiler”</td></tr>
+<tr><td>Çapraz doğrulama</td><td>kpssden.com açık veri seti (CC BY 4.0)</td></tr>
+</tbody></table></div>
+<h2>Veri kapıları</h2>
+<p>Yayımlanan her dönem şu kapılardan geçer: <strong>A)</strong> satır toplamları ÖSYM'nin kendi özet sayılarıyla birebir eşleşmeli, <strong>B)</strong> şema ve aralık kontrolleri, <strong>C)</strong> önceki döneme göre ani sıçrama uyarısı, <strong>D)</strong> bağımsız veri setiyle satır satır karşılaştırma, <strong>E)</strong> kadro tablosu ile sonuç belgelerinin aynı kadro kümesini ve aynı kontenjan toplamını vermesi. Kapılardan biri düşerse veri yayımlanmaz.</p>
+<h2>Kişisel veri</h2>
+<p>Bu sürümde hesap yoktur: girdiğiniz puan, program ve liste yalnızca tarayıcınızda (<code>localStorage</code>) tutulur, sunucuya gönderilmez. Bağlantı paylaştığınızda liste URL'in içinde taşınır.</p>
+<h2>Atıf</h2>
+<p>Veri ÖSYM'nin kamuya açık belgelerinden türetilmiştir. Çapraz doğrulama için kpssden.com veri seti (CC BY 4.0) kullanılmıştır: “KPSSDEN (kpssden.com), ÖSYM verilerinden derlenmiştir.”</p>`,
+    }),
+  );
+
+  // ---- boş kalan kadrolar
+  const emptyRows = Object.values(levels).flatMap((data) =>
+    data.rows.filter((row) => row.bos).map((row) => ({ ...row, level: data.level })),
+  );
+  writePage(
+    'bos-kalan-kadrolar.html',
+    layout({
+      title: 'Geçen dönem boş kalan kadrolar — Tercih Pusulası',
+      description: 'KPSS son yerleştirmede kimsenin yerleşmediği kadro satırları: bu dönemin en yüksek fırsat adayları.',
+      current: '/bos-kalan-kadrolar.html',
+      round,
+      body: `<h1>Boş kalan kadrolar</h1>
+<p class="lede">${escapeHtml(round)} yerleştirmesinde kontenjanı dolmayan ${emptyRows.length} satır. Boş kalması “kolay kapanır” demek değildir; ama adayların bu satırları hiç görmediğinin en somut kanıtıdır.</p>
+${
+  emptyRows.length
+    ? `<div class="table-wrap"><table><thead><tr><th>Düzey</th><th>Unvan</th><th>Kurum</th><th>İl</th><th class="num">Kont.</th></tr></thead><tbody>${emptyRows
+        .map(
+          (row) =>
+            `<tr><td>${LEVEL_LABEL[row.level]}</td><td>${escapeHtml(row.unvan)}</td><td>${escapeHtml(row.kurum)}</td><td>${escapeHtml(row.il)}</td><td class="num">${row.knt}</td></tr>`,
+        )
+        .join('')}</tbody></table></div>`
+    : '<p>Bu dönemde boş kalan satır yok.</p>'
+}`,
+    }),
+  );
+
+  // ---- SEO: unvan ve il sayfaları
+  const unvanIndex = new Map();
+  const ilIndex = new Map();
+  for (const data of Object.values(levels)) {
+    for (const row of data.rows) {
+      if (!row.unvan || !row.il) continue;
+      const uKey = row.unvan;
+      if (!unvanIndex.has(uKey)) unvanIndex.set(uKey, []);
+      unvanIndex.get(uKey).push({ ...row, level: data.level });
+      if (!ilIndex.has(row.il)) ilIndex.set(row.il, []);
+      ilIndex.get(row.il).push({ ...row, level: data.level });
+    }
+  }
+
+  const renderRowTable = (rows, withLevel = true) =>
+    `<div class="table-wrap"><table><thead><tr>${withLevel ? '<th>Düzey</th>' : ''}<th>Unvan</th><th>Kurum</th><th>İl</th><th class="num">Kont.</th><th class="num">Geçen taban</th><th class="num">Tahmin</th></tr></thead><tbody>${rows
+      .slice(0, 300)
+      .map(
+        (row) =>
+          `<tr>${withLevel ? `<td>${LEVEL_LABEL[row.level]}</td>` : ''}<td>${escapeHtml(row.unvan)}</td><td>${escapeHtml(row.kurum)}</td><td>${escapeHtml(row.il)}</td><td class="num">${row.knt ?? '—'}</td><td class="num">${fmt(row.taban)}</td><td class="num">${fmt(row.tahmin?.puan)}</td></tr>`,
+      )
+      .join('')}</tbody></table></div>`;
+
+  const unvanLinks = [];
+  for (const [unvan, rows] of unvanIndex) {
+    const slug = `unvan-${slugify(unvan)}`;
+    unvanLinks.push({ href: `/kadrolar/${slug}.html`, label: unvan, count: rows.length });
+    const sorted = [...rows].sort((a, b) => (a.taban ?? 101) - (b.taban ?? 101));
+    writePage(
+      `kadrolar/${slug}.html`,
+      layout({
+        title: `${unvan} kadroları, taban puanlar ve kontenjan — Tercih Pusulası`,
+        description: `${unvan} unvanıyla açılan ${rows.length} kadro satırı: kurum, il, kontenjan, geçen dönem taban puanı ve tahmini kapanış puanı.`,
+        current: '/kadrolar/',
+        round,
+        body: `<h1>${escapeHtml(unvan)}</h1>
+<p class="lede">${escapeHtml(round)} döneminde ${unvan} unvanıyla açılan ${rows.length} satır. En düşük geçen dönem taban puanından yükseğe sıralı.</p>
+<p><a href="/uygulama.html">Kendi puanınızla filtreleyin →</a></p>
+${renderRowTable(sorted)}`,
+      }),
+    );
+  }
+
+  const ilLinks = [];
+  for (const [il, rows] of ilIndex) {
+    const slug = `il-${slugify(il)}`;
+    ilLinks.push({ href: `/kadrolar/${slug}.html`, label: il, count: rows.length });
+    const sorted = [...rows].sort((a, b) => (a.taban ?? 101) - (b.taban ?? 101));
+    writePage(
+      `kadrolar/${slug}.html`,
+      layout({
+        title: `${il} KPSS kadroları ve taban puanlar — Tercih Pusulası`,
+        description: `${il} ilinde ${escapeHtml(round)} döneminde açılan ${rows.length} kadro: kurum, unvan, kontenjan ve taban puanlar.`,
+        current: '/kadrolar/',
+        round,
+        body: `<h1>${escapeHtml(il)}</h1>
+<p class="lede">${il} ilinde açılan ${rows.length} satır, geçen dönem taban puanına göre sıralı.</p>
+${renderRowTable(sorted)}`,
+      }),
+    );
+  }
+
+  writePage(
+    'kadrolar/index.html',
+    layout({
+      title: 'Kadrolar: unvan ve il dizini — Tercih Pusulası',
+      description: 'Unvan ve il bazında KPSS kadro listeleri, kontenjanlar ve taban puanlar.',
+      current: '/kadrolar/',
+      round,
+      body: `<h1>Kadro dizini</h1>
+<p class="lede">${unvanLinks.length} unvan ve ${ilLinks.length} il sayfası.</p>
+<h2>Unvana göre</h2>
+<ul>${unvanLinks
+        .sort((a, b) => b.count - a.count)
+        .map((link) => `<li><a href="${link.href}">${escapeHtml(link.label)}</a> <span class="count">(${link.count})</span></li>`)
+        .join('')}</ul>
+<h2>İle göre</h2>
+<ul>${ilLinks
+        .sort((a, b) => a.label.localeCompare(b.label, 'tr'))
+        .map((link) => `<li><a href="${link.href}">${escapeHtml(link.label)}</a> <span class="count">(${link.count})</span></li>`)
+        .join('')}</ul>`,
+    }),
+  );
+
+  // ---- PWA + robots + sitemap
+  writeFileSync(
+    join(DIST, 'manifest.webmanifest'),
+    JSON.stringify(
+      {
+        name: 'Tercih Pusulası',
+        short_name: 'Pusula',
+        start_url: '/uygulama.html',
+        display: 'standalone',
+        background_color: '#ffffff',
+        theme_color: '#1a5fd0',
+        lang: 'tr',
+        icons: [{ src: '/assets/favicon.svg', sizes: 'any', type: 'image/svg+xml' }],
+      },
+      null,
+      2,
+    ),
+  );
+  writeFileSync(
+    join(DIST, 'assets', 'favicon.svg'),
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#1a5fd0"/><path d="M32 12 44 32 32 52 20 32Z" fill="#fff"/><circle cx="32" cy="32" r="4" fill="#1a5fd0"/></svg>',
+  );
+  const urls = ['/', '/uygulama.html', '/metodoloji.html', '/veri-kaynaklari.html', '/bos-kalan-kadrolar.html', '/kadrolar/', ...unvanLinks.map((l) => l.href), ...ilLinks.map((l) => l.href)];
+  writeFileSync(join(DIST, 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map((u) => `  <url><loc>https://tercihpusula.com${u}</loc></url>`).join('\n')}\n</urlset>\n`);
+  writeFileSync(join(DIST, 'robots.txt'), 'User-agent: *\nAllow: /\nSitemap: https://tercihpusula.com/sitemap.xml\n');
+
+  const pages = urls.length + 1;
+  process.stderr.write(
+    `[build] ${round}: ${pages} sayfa, ${Object.keys(levels).length} seviye, ` +
+      `${Object.values(levels).reduce((sum, d) => sum + d.rows.length, 0)} kadro satırı, ${summary.lisans?.kontenjan ?? '?'} lisans kontenjanı\n`,
+  );
+}
+
+main();

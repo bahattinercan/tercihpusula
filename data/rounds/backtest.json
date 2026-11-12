@@ -1,0 +1,204 @@
+{
+  "generatedFor": "2026/1",
+  "sigma": {
+    "lisans": 7.2,
+    "onlisans": 10.99,
+    "ortaogretim": 8.84
+  },
+  "summary": [
+    {
+      "level": "lisans",
+      "rounds": 2,
+      "compared": 1516,
+      "mae": 3.950024175461736,
+      "coverage": 0.4742744063324538
+    },
+    {
+      "level": "onlisans",
+      "rounds": 2,
+      "compared": 844,
+      "mae": 6.04425035545024,
+      "coverage": 0.21445497630331753
+    },
+    {
+      "level": "ortaogretim",
+      "rounds": 2,
+      "compared": 314,
+      "mae": 4.5163394267515935,
+      "coverage": 0.46496815286624205
+    }
+  ],
+  "report": [
+    {
+      "from": "2025/1",
+      "to": "2025/2",
+      "level": "lisans",
+      "compared": 973,
+      "mae": 3.6419279856115043,
+      "coverage": 0.4789311408016444,
+      "bySource": [
+        {
+          "source": "unvan_il",
+          "compared": 651,
+          "mae": 3.74488549923195
+        },
+        {
+          "source": "unvan",
+          "compared": 322,
+          "mae": 3.4337747515527957
+        }
+      ],
+      "bandDistribution": {
+        "riskli": 310,
+        "uzak": 380,
+        "garanti": 127,
+        "hedef": 156
+      }
+    },
+    {
+      "from": "2025/1",
+      "to": "2025/2",
+      "level": "onlisans",
+      "compared": 434,
+      "mae": 5.264450069124426,
+      "coverage": 0.24423963133640553,
+      "bySource": [
+        {
+          "source": "unvan",
+          "compared": 230,
+          "mae": 4.763608304347824
+        },
+        {
+          "source": "unvan_il",
+          "compared": 204,
+          "mae": 5.829124607843138
+        }
+      ],
+      "bandDistribution": {
+        "garanti": 91,
+        "uzak": 237,
+        "riskli": 62,
+        "hedef": 44
+      }
+    },
+    {
+      "from": "2025/1",
+      "to": "2025/2",
+      "level": "ortaogretim",
+      "compared": 176,
+      "mae": 3.7273233522727294,
+      "coverage": 0.5056818181818182,
+      "bySource": [
+        {
+          "source": "unvan",
+          "compared": 64,
+          "mae": 3.384999375000004
+        },
+        {
+          "source": "unvan_il",
+          "compared": 112,
+          "mae": 3.9229370535714265
+        }
+      ],
+      "bandDistribution": {
+        "uzak": 67,
+        "riskli": 59,
+        "garanti": 20,
+        "hedef": 30
+      }
+    },
+    {
+      "from": "2025/2",
+      "to": "2026/1",
+      "level": "lisans",
+      "compared": 543,
+      "mae": 4.50210077348066,
+      "coverage": 0.46593001841620624,
+      "bySource": [
+        {
+          "source": "unvan_il",
+          "compared": 440,
+          "mae": 3.7929172727272698
+        },
+        {
+          "source": "unvan",
+          "compared": 27,
+          "mae": 2.9464796296296294
+        },
+        {
+          "source": "same_kod",
+          "compared": 76,
+          "mae": 9.160554868421054
+        }
+      ],
+      "bandDistribution": {
+        "uzak": 193,
+        "hedef": 103,
+        "riskli": 150,
+        "garanti": 97
+      }
+    },
+    {
+      "from": "2025/2",
+      "to": "2026/1",
+      "level": "onlisans",
+      "compared": 410,
+      "mae": 6.869697487804881,
+      "coverage": 0.18292682926829268,
+      "bySource": [
+        {
+          "source": "unvan_il",
+          "compared": 281,
+          "mae": 6.0636904626334545
+        },
+        {
+          "source": "unvan",
+          "compared": 2,
+          "mae": 2.2259349999999927
+        },
+        {
+          "source": "same_kod",
+          "compared": 127,
+          "mae": 8.726197480314962
+        }
+      ],
+      "bandDistribution": {
+        "uzak": 259,
+        "riskli": 35,
+        "hedef": 40,
+        "garanti": 76
+      }
+    },
+    {
+      "from": "2025/2",
+      "to": "2026/1",
+      "level": "ortaogretim",
+      "compared": 138,
+      "mae": 5.522620797101449,
+      "coverage": 0.41304347826086957,
+      "bySource": [
+        {
+          "source": "unvan_il",
+          "compared": 116,
+          "mae": 5.658539396551721
+        },
+        {
+          "source": "unvan",
+          "compared": 19,
+          "mae": 4.729793684210527
+        },
+        {
+          "source": "same_kod",
+          "compared": 3,
+          "mae": 5.288339999999995
+        }
+      ],
+      "bandDistribution": {
+        "garanti": 34,
+        "uzak": 47,
+        "riskli": 29,
+        "hedef": 28
+      }
+    }
+  ]
+}

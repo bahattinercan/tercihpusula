@@ -328,6 +328,35 @@
     "problemCount": 0
   },
   {
+    "name": "F",
+    "round": "2026/1",
+    "level": "lisans",
+    "ok": true,
+    "detail": "tablo↔sonuç: il %99.6 · kontenjan %100.0 · unvan %98.6 · kurum %43.6",
+    "rates": {
+      "kurum": 0.436036036036036,
+      "unvan": 0.9855855855855856,
+      "il": 0.9963963963963964,
+      "kontenjan": 1
+    },
+    "compared": 555,
+    "warnings": [
+      "kurum metni %43.6 (sarılmış hücreler)"
+    ],
+    "problems": [],
+    "problemCount": 0
+  },
+  {
+    "name": "E",
+    "round": "2026/1",
+    "level": "lisans",
+    "ok": true,
+    "detail": "tablo=555 sonuç=555 adet=977",
+    "warnings": [],
+    "problems": [],
+    "problemCount": 0
+  },
+  {
     "name": "A",
     "round": "2026/1",
     "level": "onlisans",
@@ -376,6 +405,36 @@
     "problemCount": 0
   },
   {
+    "name": "F",
+    "round": "2026/1",
+    "level": "onlisans",
+    "ok": true,
+    "detail": "tablo↔sonuç: il %100.0 · kontenjan %100.0 · unvan %88.3 · kurum %29.5",
+    "rates": {
+      "kurum": 0.2951219512195122,
+      "unvan": 0.8829268292682927,
+      "il": 1,
+      "kontenjan": 1
+    },
+    "compared": 410,
+    "warnings": [
+      "kurum metni %29.5 (sarılmış hücreler)",
+      "unvan metni %88.3"
+    ],
+    "problems": [],
+    "problemCount": 0
+  },
+  {
+    "name": "E",
+    "round": "2026/1",
+    "level": "onlisans",
+    "ok": true,
+    "detail": "tablo=410 sonuç=410 adet=828",
+    "warnings": [],
+    "problems": [],
+    "problemCount": 0
+  },
+  {
     "name": "A",
     "round": "2026/1",
     "level": "ortaogretim",
@@ -417,6 +476,35 @@
     "level": "ortaogretim",
     "ok": true,
     "compared": 141,
+    "warnings": [],
+    "problems": [],
+    "problemCount": 0
+  },
+  {
+    "name": "F",
+    "round": "2026/1",
+    "level": "ortaogretim",
+    "ok": true,
+    "detail": "tablo↔sonuç: il %100.0 · kontenjan %100.0 · unvan %99.3 · kurum %60.3",
+    "rates": {
+      "kurum": 0.6028368794326241,
+      "unvan": 0.9929078014184397,
+      "il": 1,
+      "kontenjan": 1
+    },
+    "compared": 141,
+    "warnings": [
+      "kurum metni %60.3 (sarılmış hücreler)"
+    ],
+    "problems": [],
+    "problemCount": 0
+  },
+  {
+    "name": "E",
+    "round": "2026/1",
+    "level": "ortaogretim",
+    "ok": true,
+    "detail": "tablo=141 sonuç=141 adet=278",
     "warnings": [],
     "problems": [],
     "problemCount": 0

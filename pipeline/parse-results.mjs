@@ -20,6 +20,8 @@ const SCORES = new RegExp(String.raw`(?:^|\s)(${SCORE})\s+(${SCORE})\s*$`);
 const INTS = /(?:^|\s)(\d+)\s+(\d+)\s+(\d+)\s*$/;
 const CELL_GAP = /\s{5,}/;
 
+const norm = (value) => (value === null || value === undefined ? null : String(value).replace(/\s+/g, ' ').trim() || null);
+
 const toScore = (raw) => {
   if (raw === undefined || raw === null || raw === '--') return null;
   const value = Number(String(raw).replace(',', '.'));
@@ -31,7 +33,8 @@ const toScore = (raw) => {
 export function splitKurum(raw) {
   const parts = raw.split('/').map((p) => p.trim()).filter(Boolean);
   let teskilat = null;
-  if (parts.length > 1 && /^(MERKEZ|TAŞRA)$/i.test(parts.at(-1))) teskilat = parts.pop().toUpperCase();
+  // ön lisans dosyalarında üçüncü bileşen "DÖNER SERMAYE" olabiliyor
+  if (parts.length > 1 && /^(MERKEZ|TAŞRA|DÖNER SERMAYE)$/i.test(parts.at(-1))) teskilat = parts.pop().toUpperCase();
   const il = parts.length > 1 ? parts.pop() : null;
   return { kurum: parts.join(' / ') || null, il, teskilat };
 }
