@@ -313,6 +313,58 @@ function main() {
     .join('');
 
   // ---- metodoloji
+  const pctM = (part, whole) => (whole ? `${((part / whole) * 100).toFixed(1).replace('.', ',')}%` : '—');
+  const ANCHOR_LABEL = {
+    unvan_il: 'aynı unvan + aynı il',
+    same_kod: 'aynı kadro kodu',
+    unvan: 'aynı unvan (ülke geneli)',
+    none: 'çapa bulunamadı',
+  };
+  const ANCHOR_RULE = {
+    unvan_il: 'Varsayılan çapa: kadro geçen dönem de aynı ilde aynı unvanla açılmışsa o grubun ortancası.',
+    same_kod: 'Aynı kadro kodu geçen dönemde de ilan edilmişse onun gerçekleşen taban puanı.',
+    unvan: 'İl eşleşmesi yoksa ülke genelindeki aynı unvan satırlarının ortancası.',
+    none: 'Ne il ne kod ne unvan eşleşmesi var: puan gösterilmez.',
+  };
+  const anchorUse = {};
+  for (const level of LEVELS) {
+    for (const pred of Object.values(predictions?.levels?.[level] ?? {})) {
+      const key2 = pred.source ?? 'none';
+      anchorUse[key2] ??= { total: 0, byLevel: {} };
+      anchorUse[key2].total += 1;
+      anchorUse[key2].byLevel[level] = (anchorUse[key2].byLevel[level] ?? 0) + 1;
+    }
+  }
+  const anchorTotal = Object.values(anchorUse).reduce((sum, entry) => sum + entry.total, 0);
+
+  // geri testte çapa başına hata (karşılaştırılan satır sayısıyla ağırlıklı)
+  const sourceMae = {};
+  for (const pair of backtest?.report ?? []) {
+    for (const source of pair.bySource ?? []) {
+      const entry = (sourceMae[source.source] ??= { compared: 0, weighted: 0 });
+      entry.compared += source.compared;
+      entry.weighted += source.mae * source.compared;
+    }
+  }
+  const bandTotals = {};
+  for (const pair of backtest?.report ?? []) {
+    for (const [band, count] of Object.entries(pair.bandDistribution ?? {})) bandTotals[band] = (bandTotals[band] ?? 0) + count;
+  }
+  const bandTotalRows = Object.values(bandTotals).reduce((sum, count) => sum + count, 0);
+  const BAND_NOTE = {
+    garanti: 'Listeye koy; sıralamada alt blokta tut.',
+    hedef: 'Listeye koy; sıralamada orta blok.',
+    riskli: 'Üst sıralara yaz, tek başına güvenme.',
+    uzak: 'Yalnızca “şans denemesi” olarak, sonlara.',
+  };
+
+  const pairRows = (backtest?.report ?? [])
+    .map(
+      (pair) =>
+        `<tr><td class="mono">${escapeHtml(pair.from)} → ${escapeHtml(pair.to)}</td><td>${LEVEL_LABEL[pair.level] ?? pair.level}</td><td class="num">${pair.compared}</td><td class="num">${pair.mae?.toFixed(2).replace('.', ',')}</td><td class="num">${pctM(pair.coverage, 1)}</td></tr>`,
+    )
+    .join('');
+
   writePage(
     'metodoloji.html',
     layout({
@@ -322,67 +374,192 @@ function main() {
       round,
       body: `<p class="kicker">ölçüm · ${escapeHtml(round)}</p>
 <h1>Metodoloji</h1>
-<p class="lede">Bu sayfa, üründeki her sayının nereden geldiğini ve ne kadar yanılabileceğini açıklar. Gizli model yok.</p>
+<p class="lede">Bu sayfa, üründeki her sayının nereden geldiğini ve ne kadar yanılabileceğini açıklar. Gizli model yok: her sayı burada yayımlanan yöntemle, burada yayımlanan hata payıyla üretilir.</p>
 <div class="tiles">${(backtest?.summary ?? [])
         .map(
           (entry) =>
             `<div class="tile"><span class="label">${LEVEL_LABEL[entry.level] ?? entry.level}</span><span class="value">±${(backtest.sigma[entry.level] ?? 0).toFixed(1).replace('.', ',')}</span><span class="unit">puan · hata ${entry.mae?.toFixed(2).replace('.', ',') ?? '—'}</span></div>`,
         )
         .join('')}</div>
-<h2>Tahmini taban puan</h2>
-<p>Bir kadro satırı için sırayla şu üç çapa denenir: <strong>(1)</strong> aynı unvan + aynı ildeki satırların geçen dönem taban puanlarının ortancası, <strong>(2)</strong> aynı kadro kodunun geçen dönem taban puanı, <strong>(3)</strong> aynı unvanın ülke genelindeki ortancası. Bulunan değer, kontenjan değişimine göre küçük bir düzeltme alır (kontenjan artarsa kapanış puanı aşağı).</p>
-<p>Çapa sırası tahmin değil, ölçüm sonucudur: iki dönem çifti üzerinde yapılan geri testte “aynı unvan + il” çapası, “aynı kadro kodu” çapasından daha düşük hata verdi (aynı kadro kodu yeniden ilan edildiğinde nitelikleri ve dolayısıyla aday havuzu değişebiliyor).</p>
-<h2>Bantlar</h2>
-<table class="table-wrap"><thead><tr><th>Bant</th><th>Anlamı</th></tr></thead><tbody>
-<tr><td><span class="chip garanti">garanti</span></td><td>Puanınız tahminin üst sınırının üzerinde.</td></tr>
-<tr><td><span class="chip hedef">hedef</span></td><td>Puanınız tahminin üzerinde ama aralığın içinde.</td></tr>
-<tr><td><span class="chip riskli">riskli</span></td><td>Puanınız tahminin altında, aralığın içinde.</td></tr>
-<tr><td><span class="chip uzak">uzak</span></td><td>Puanınız tahminin alt sınırının altında.</td></tr>
-</tbody></table>
+<h2>Üç çapa, tek sıra</h2>
+<p>Her kadro satırı için sırayla üç çapa denenir; ilk bulunan kullanılır. Bulunan değer kontenjan değişimine göre küçük bir düzeltme alır (kontenjan artarsa kapanış puanı aşağı). Sıra tahmin değil, ölçüm sonucudur.</p>
+<div class="table-wrap"><table><thead><tr><th>çapa</th><th>ne zaman kullanılır</th><th class="num">${escapeHtml(round)} satır</th><th class="num">pay</th><th class="num">geri test hatası</th></tr></thead><tbody>${['unvan_il', 'same_kod', 'unvan', 'none']
+        .filter((key2) => anchorUse[key2])
+        .map((key2) => {
+          const entry = anchorUse[key2];
+          const mae = sourceMae[key2];
+          return `<tr><td class="mono" style="font-size:12px">${escapeHtml(ANCHOR_LABEL[key2] ?? key2)}</td><td><div class="sub">${escapeHtml(ANCHOR_RULE[key2] ?? '')}</div></td><td class="num">${entry.total}</td><td class="num dim">${pctM(entry.total, anchorTotal)}</td><td class="num">${mae ? mae.weighted / mae.compared > 0 ? `${(mae.weighted / mae.compared).toFixed(2).replace('.', ',')}` : '—' : '—'}</td></tr>`;
+        })
+        .join('')}</tbody></table></div>
+<p style="font-size:.9rem;color:var(--ink-muted)">“Aynı kadro kodu” çapası ölçümde belirgin biçimde daha yüksek hata verdi (8,6'ya karşı 4,5): bir kadro yeniden ilan edildiğinde aranan nitelikler ve dolayısıyla aday havuzu değişebiliyor, kod aynı kalsa bile kapanış puanı kayıyor. Bu yüzden kod çapası ikinci sıraya alındı.</p>
+<h2>Bantlar ve aralık</h2>
+<p>Her satır için bir tahmin ve o tahminin etrafında <strong>± σ</strong> genişliğinde bir aralık üretilir. σ, geri testte ölçülen hatadan gelir (yukarıdaki tile'lar). Bant, puanınızın bu aralığa göre nerede durduğudur.</p>
+<div class="table-wrap"><table><thead><tr><th>bant</th><th>anlamı</th><th>geri testte payı</th><th>ne yapmalı</th></tr></thead><tbody>
+${['garanti', 'hedef', 'riskli', 'uzak']
+  .map((band) => {
+    const meaning = {
+      garanti: 'Puanınız tahminin üst sınırının üzerinde.',
+      hedef: 'Puanınız tahminin üzerinde ama aralığın içinde.',
+      riskli: 'Puanınız tahminin altında, aralığın içinde.',
+      uzak: 'Puanınız tahminin alt sınırının altında.',
+    }[band];
+    return `<tr><td><span class="chip ${band}">${band}</span></td><td>${meaning}</td><td class="num dim">${pctM(bandTotals[band] ?? 0, bandTotalRows)}</td><td><div class="sub">${BAND_NOTE[band]}</div></td></tr>`;
+  })
+  .join('')}
+</tbody></table></div>
+<p style="font-size:.9rem;color:var(--ink-muted)">“Garanti” %100 değildir: aralık dışına taşma olasılığı düşük demektir. Geri testte satırların ${pctM(bandTotals.riskli ?? 0, bandTotalRows)}'i “riskli”, ${pctM(bandTotals.uzak ?? 0, bandTotalRows)}'i “uzak” bandına düştü — bantlar süs değil, gerçek dağılımı ayırıyor.</p>
 <h2>Geri test (yayımlanmış hata)</h2>
-<p>Aynı yöntemle geçmiş dönemler tahmin edilip gerçekleşen taban puanlarla karşılaştırıldı. Ölçü: ortalama mutlak hata (puan) ve ± aralığın isabet oranı.</p>
-<div class="table-wrap"><table><thead><tr><th>Düzey</th><th class="num">Karşılaştırma</th><th class="num">Ortalama hata</th><th class="num">Aralık</th><th class="num">Aralık isabeti</th></tr></thead><tbody>${backtestRows || '<tr><td colspan="5">Geri test verisi yok.</td></tr>'}</tbody></table></div>
-<p style="font-size:.9rem;color:var(--ink-muted)">Aralık isabeti, gerçekleşen taban puanın ± aralık içinde kalma oranıdır. Bantlar bu aralıktan türetilir; yani “garanti” etiketi %100 değil, aralık dışına taşma olasılığının düşük olduğu anlamına gelir.</p>
+<p>Aynı yöntem geçmiş dönemler için çalıştırıldı, sonuç gerçekleşen taban puanlarla karşılaştırıldı. Her satır bir dönem çifti: tahmin geçmiş dönemden üretildi, sonraki dönemde sınandı.</p>
+<div class="table-wrap"><table><thead><tr><th>dönem çifti</th><th>düzey</th><th class="num">karşılaştırılan</th><th class="num">ortalama hata</th><th class="num">aralık isabeti</th></tr></thead><tbody>${pairRows || '<tr><td colspan="5">Geri test verisi yok.</td></tr>'}</tbody></table></div>
+<p style="font-size:.9rem;color:var(--ink-muted)">Ortalama hata dönem çifti bazında 3,5–6,3 puan; aralık isabeti %22–53. İkinci sayı düşük görünüyor ama aralık ± σ olduğu için beklenen değer budur: daha geniş aralık daha yüksek isabet ama daha az bilgi demek. Bant etiketleri bu yüzden “kesin” değil, “göreli” okunmalı.</p>
 <h2>Yerleşme olasılığı</h2>
 <p>Satır olasılığı, puanınızın tahmin etrafındaki dağılımda nerede durduğuna bağlı lojistik bir eğridir. Liste olasılığı, satırların bağımsız olmadığı varsayımıyla <code>1 − Π(1 − pᵢ)</code> olarak birleştirilir; bu üst sınır eğilimli bir yaklaşımdır ve tercih sırasını hesaba katmaz. Bu yüzden ekranda “≈” ile gösterilir.</p>
 <h2>Veri kalitesi (tablo ↔ sonuç)</h2>
 <p>Kadro tablosu PDF'inde uzun hücreler alt satıra taşıyor. Aynı dönemin sonuç belgeleriyle karşılaştırıldığında alan bazında eşleşme oranı şöyle:</p>
-<div class="table-wrap"><table><thead><tr><th>Düzey</th><th class="num">İl</th><th class="num">Kontenjan</th><th class="num">Unvan</th><th class="num">Kurum</th></tr></thead><tbody>${gateFRows}</tbody></table></div>
-<p style="font-size:.9rem;color:var(--ink-muted)">İl ve kontenjan kimlik taşıdığı için %99,5 altına düşerse veri yayımlanmaz; unvan ve kurum metni ise taşan hücrelerden etkilenir ve geçmiş dönem kaydıyla tamamlanır. Satır kimliği her zaman ÖSYM kadro kodudur.</p>
+<div class="table-wrap"><table><thead><tr><th>düzey</th><th class="num">il</th><th class="num">kontenjan</th><th class="num">unvan</th><th class="num">kurum</th></tr></thead><tbody>${gateFRows}</tbody></table></div>
+<p style="font-size:.9rem;color:var(--ink-muted)">İl ve kontenjan kimlik taşıdığı için %99,5 altına düşerse veri yayımlanmaz; unvan ve kurum metni taşan hücrelerden etkilenir ve geçmiş dönem kaydıyla tamamlanır. Satır kimliği her zaman ÖSYM kadro kodudur.</p>
 <h2>Yazılabilirlik</h2>
-<p>Kılavuzun nitelik kodları, mezun olunan programla eşleştirilir. Sertifika, ehliyet veya “Bakınız Başvurma Özel Şartları” içeren kodlar otomatik olarak geçmiş sayılmaz; satır “kontrol et” etiketiyle gösterilir. Nihai doğrulama her zaman ÖSYM tercih ekranında ve kılavuzda yapılmalıdır.</p>`,
+<p>Kılavuzun nitelik kodları, mezun olunan programla eşleştirilir. Sertifika, ehliyet veya “Bakınız Başvurma Özel Şartları” içeren kodlar otomatik olarak geçmiş sayılmaz; satır “kontrol et” etiketiyle gösterilir. Nihai doğrulama her zaman ÖSYM tercih ekranında ve kılavuzda yapılmalıdır.</p>
+<h2>Sınırlar — bu yöntem neyi bilmez</h2>
+<ul class="limit-list">
+<li><strong>Kontenjan şoku:</strong> Bir kadro 1'den 20'ye çıkarsa taban puan tarihsel eğilimin çok altına inebilir. Model kontenjan değişimini yalnızca küçük bir düzeltmeyle taşır.</li>
+<li><strong>Yeniden ilan edilmeyen kadro:</strong> Kadro kodu bu dönem yoksa geçmiş puanı doğrudan taşınamaz; çapa unvan/il ortancasına düşer ve hata büyür.</li>
+<li><strong>Nitelik değişimi:</strong> Aynı unvanın aranan nitelikleri değişirse aday havuzu değişir; geçmiş taban puan yanıltıcı olur.</li>
+<li><strong>Tercih davranışı kayması:</strong> Adayların bu dönem hangi kadrolara yöneleceği modele girmez (kalabalık simülasyonu bu sürümde yok).</li>
+<li><strong>Küçük kontenjan:</strong> Kontenjanı 1 olan satırda tek bir adayın puanı taban puanın tamamını belirler; bu satırlarda tahmin aralığı dar görünse de gerçek belirsizlik yüksektir.</li>
+</ul>
+<h2>Künye</h2>
+<div class="table-wrap"><table><tbody>
+<tr><td>veri dönemi</td><td class="mono">${escapeHtml(round)}</td></tr>
+<tr><td>geri test çiftleri</td><td class="mono">${[...new Set((backtest?.report ?? []).map((pair) => `${pair.from}→${pair.to}`))].join(' · ') || '—'}</td></tr>
+<tr><td>karşılaştırılan satır (toplam)</td><td class="num">${(backtest?.summary ?? []).reduce((sum, entry) => sum + (entry.compared ?? 0), 0)}</td></tr>
+<tr><td>kullanılan çapa sırası</td><td class="mono">unvan+il → kadro kodu → unvan</td></tr>
+<tr><td>aralık</td><td class="mono">tahmin ± σ (düzey başına, yukarıda)</td></tr>
+<tr><td>veri kapıları</td><td class="mono">A–F · biri düşerse yayın durur</td></tr>
+</tbody></table></div>`,
     }),
   );
 
   // ---- veri kaynakları
+  const pctV = (part, whole) => (whole ? `${((part / whole) * 100).toFixed(1).replace('.', ',')}%` : '—');
+  const roundInventory = ROUND_DIRS.map((dir) => {
+    const roundKey = dir.replace('-', '/');
+    const meta = existsSync(join(ROUNDS, dir, 'meta.json')) ? readJson(join(ROUNDS, dir, 'meta.json')) : null;
+    const official = existsSync(join(ROUNDS, dir, 'summary.json')) ? readJson(join(ROUNDS, dir, 'summary.json')).levels : null;
+    const guideMeta = existsSync(join(ROUNDS, dir, 'guide-meta.json')) ? readJson(join(ROUNDS, dir, 'guide-meta.json')) : null;
+    return { round: roundKey, meta, official, guideMeta };
+  });
+  const GATE_WHAT = {
+    A: ['satır toplamları ÖSYM özet sayılarıyla birebir', 'tam eşleşme'],
+    B: ['şema, tip ve aralık kontrolleri', '0 hata'],
+    C: ['önceki döneme göre ani sıçrama', 'uyarı'],
+    D: ['kpssden.com bağımsız veri setiyle satır karşılaştırması', '0 eksik satır'],
+    E: ['kadro tablosu ↔ sonuç belgeleri: aynı kadro kümesi, aynı kontenjan', '%100 kontenjan'],
+    F: ['alan bazında eşleşme: il, kontenjan, unvan, kurum', 'il/kontenjan ≥ %99,5'],
+  };
+  const gateSummary = Object.keys(GATE_WHAT).map((name) => {
+    const entries = gateReport.filter((entry) => entry.name === name);
+    const ok = entries.filter((entry) => entry.ok).length;
+    const failed = entries.filter((entry) => !entry.ok);
+    return { name, entries: entries.length, ok, failed };
+  });
+
+  const inventoryRows = roundInventory
+    .map(({ round: roundKey, meta, official }) => {
+      const cells = LEVELS.map((level) => {
+        const parsed = meta?.levels?.[level];
+        if (!parsed) return '';
+        const off = official?.[level];
+        return `<tr><td class="mono">${escapeHtml(roundKey)}</td><td>${LEVEL_LABEL[level]}</td><td class="num">${parsed.rows}</td><td class="num">${parsed.kontenjan}</td><td class="num">${parsed.yerlesen}</td><td class="num">${parsed.bosKalan}</td><td class="num dim">${off?.tercihYapan ?? '—'}</td></tr>`;
+      }).join('');
+      const parsed = LEVELS.map((level) => meta?.levels?.[level]).filter(Boolean);
+      const total = parsed.reduce(
+        (acc, level) => ({
+          rows: acc.rows + level.rows,
+          kontenjan: acc.kontenjan + level.kontenjan,
+          yerlesen: acc.yerlesen + level.yerlesen,
+          bosKalan: acc.bosKalan + level.bosKalan,
+        }),
+        { rows: 0, kontenjan: 0, yerlesen: 0, bosKalan: 0 },
+      );
+      const landing = meta?.landing
+        ? `<a href="${escapeHtml(meta.landing)}" rel="noopener">${escapeHtml(roundKey)}</a>`
+        : escapeHtml(roundKey);
+      return `${cells}<tr style="background:color-mix(in oklab, var(--accent) 6%, transparent)"><td class="mono">${landing}</td><td>toplam</td><td class="num">${total.rows}</td><td class="num">${total.kontenjan}</td><td class="num">${total.yerlesen}</td><td class="num">${total.bosKalan}</td><td class="num dim">${official?.toplam?.tercihYapan ?? '—'}</td></tr>`;
+    })
+    .join('');
+
+  const guideRows = roundInventory
+    .filter(({ guideMeta }) => guideMeta?.stats)
+    .flatMap(({ round: roundKey, guideMeta }) =>
+      LEVELS.filter((level) => guideMeta.stats[level]).map(
+        (level) =>
+          `<tr><td class="mono">${escapeHtml(roundKey)}</td><td>${LEVEL_LABEL[level]}</td><td class="num">${guideMeta.stats[level].programmes ?? '—'}</td><td class="num">${guideMeta.stats[level].nitelikler ?? '—'}</td><td class="num">${guideMeta.stats[level].tablo?.parsed ?? '—'}</td><td class="num dim">${guideMeta.stats[level].tablo?.rejectedLines ?? '—'}</td></tr>`,
+      ),
+    )
+    .join('');
+
   writePage(
     'veri-kaynaklari.html',
     layout({
       title: 'Veri kaynakları — Tercih Pusulası',
-      description: 'Kadro tabloları, taban puanlar ve nitelik kodları hangi ÖSYM belgelerinden üretildi.',
+      description: 'Kadro tabloları, taban puanlar ve nitelik kodları hangi ÖSYM belgelerinden üretildi; hangi kapılardan geçti.',
       current: '/veri-kaynaklari.html',
       round,
       body: `<p class="kicker">kaynak defteri</p>
 <h1>Veri ve kaynak</h1>
-<p class="lede">Tüm sayılar ÖSYM'nin kamuya açık belgelerinden üretilir; her dönem değişmez bir anlık görüntü olarak saklanır.</p>
+<p class="lede">Tüm sayılar ÖSYM'nin kamuya açık belgelerinden üretilir; her dönem değişmez bir anlık görüntü olarak saklanır. Bu sayfa hangi belgeden ne aldığımızı, neyin bozuk çıktığını ve neyi nasıl düzelttiğimizi yayımlar.</p>
 <div class="tiles">
   <div class="tile"><span class="label">dönem</span><span class="value">${ROUND_DIRS.length}</span><span class="unit">anlık görüntü</span></div>
-  <div class="tile"><span class="label">kadro satırı</span><span class="value">${ROUND_DIRS.reduce((sum, dir) => sum + LEVELS.reduce((inner, level) => { const file = join(ROUNDS, dir, `${level}.json`); return inner + (existsSync(file) ? readJson(file).rows.length : 0); }, 0), 0)}</span><span class="unit">3 seviye toplamı</span></div>
-  <div class="tile"><span class="label">veri kapısı</span><span class="value">6</span><span class="unit">A–F</span></div>
-  <div class="tile muted"><span class="label">birim testi</span><span class="value">38</span><span class="unit">node:test</span></div>
+  <div class="tile"><span class="label">kadro satırı</span><span class="value">${roundInventory.reduce((sum, entry) => sum + LEVELS.reduce((inner, level) => inner + (entry.meta?.levels?.[level]?.rows ?? 0), 0), 0)}</span><span class="unit">3 seviye toplamı</span></div>
+  <div class="tile"><span class="label">program kaydı</span><span class="value">${roundInventory.reduce((sum, entry) => sum + LEVELS.reduce((inner, level) => inner + (entry.guideMeta?.stats?.[level]?.programmes ?? 0), 0), 0)}</span><span class="unit">kılavuz mezun alanları</span></div>
+  <div class="tile muted"><span class="label">veri kapısı</span><span class="value">${gateSummary.length}</span><span class="unit">A–F · yayın kapısı</span></div>
 </div>
-<div class="table-wrap"><table><thead><tr><th>Veri</th><th>Kaynak</th></tr></thead><tbody>
-<tr><td>Kadro tabloları ve aranan nitelik kodları</td><td>ÖSYM tercih kılavuzu Tablo-1/2/3</td></tr>
-<tr><td>Nitelik kodu sözlüğü</td><td>ÖSYM nitelik kodları ekleri (düzey başına ayrı dosya)</td></tr>
-<tr><td>Mezun olunan program / alan listesi</td><td>ÖSYM mezun olunan alan listeleri</td></tr>
-<tr><td>Gerçekleşen en küçük–en büyük puanlar</td><td>ÖSYM yerleştirme sonuçları (düzey başına ayrı dosya)</td></tr>
-<tr><td>Kontenjan / yerleşen / boş toplamları</td><td>ÖSYM “Yerleştirme Sonuçlarına İlişkin Sayısal Bilgiler”</td></tr>
-<tr><td>Çapraz doğrulama</td><td>kpssden.com açık veri seti (CC BY 4.0)</td></tr>
+<h2>Kaynak belgeler</h2>
+<div class="table-wrap"><table><thead><tr><th>veri</th><th>belge</th><th>hangi alan için</th></tr></thead><tbody>
+<tr><td>Kadro tabloları</td><td>ÖSYM tercih kılavuzu Tablo-1/2/3 (düzey başına)</td><td><div class="sub">kadro kodu, kurum, il, unvan, kontenjan, aranan nitelik kodları</div></td></tr>
+<tr><td>Nitelik kodu sözlüğü</td><td>ÖSYM “aranan nitelikler” ekleri</td><td><div class="sub">kod → açıklama; hangi programların yazabileceği</div></td></tr>
+<tr><td>Mezun olunan alan listesi</td><td>ÖSYM mezun olunan alan listeleri</td><td><div class="sub">program → yazılabilir kadro eşleşmesi</div></td></tr>
+<tr><td>Gerçekleşen puanlar</td><td>ÖSYM yerleştirme sonuçları (düzey başına)</td><td><div class="sub">en küçük–en büyük puan, yerleşen sayısı</div></td></tr>
+<tr><td>Resmî toplamlar</td><td>ÖSYM “Yerleştirme Sonuçlarına İlişkin Sayısal Bilgiler”</td><td><div class="sub">tercih yapan, kontenjan, yerleşen, boş — A kapısının dayanağı</div></td></tr>
+<tr><td>Çapraz doğrulama</td><td>kpssden.com açık veri seti (CC BY 4.0)</td><td><div class="sub">D kapısı: bağımsız kaynakla satır karşılaştırması</div></td></tr>
 </tbody></table></div>
+<h2>Dönem envanteri</h2>
+<p class="count" style="margin-block-end:8px">toplam satırı ÖSYM'nin ilgili sayfasına bağlanır</p>
+<div class="table-wrap"><table><thead><tr><th>dönem</th><th>düzey</th><th class="num">satır</th><th class="num">kontenjan</th><th class="num">yerleşen</th><th class="num">boş kontenjan</th><th class="num">tercih yapan</th></tr></thead><tbody>${inventoryRows}</tbody></table></div>
 <h2>Veri kapıları</h2>
-<p>Yayımlanan her dönem şu kapılardan geçer: <strong>A)</strong> satır toplamları ÖSYM'nin kendi özet sayılarıyla birebir eşleşmeli, <strong>B)</strong> şema ve aralık kontrolleri, <strong>C)</strong> önceki döneme göre ani sıçrama uyarısı, <strong>D)</strong> bağımsız veri setiyle satır satır karşılaştırma, <strong>E)</strong> kadro tablosu ile sonuç belgelerinin aynı kadro kümesini ve aynı kontenjan toplamını vermesi. Kapılardan biri düşerse veri yayımlanmaz.</p>
+<p>Yayımlanan her dönem şu kapılardan geçer. Kapılardan biri düşerse veri yayımlanmaz — uyarı veren kapı rapora yazılır.</p>
+<div class="table-wrap"><table><thead><tr><th>kapı</th><th>ne kontrol eder</th><th>eşik</th><th class="num">sonuç</th></tr></thead><tbody>${gateSummary
+        .map(
+          (gate) =>
+            `<tr><td class="mono">${gate.name}</td><td>${escapeHtml(GATE_WHAT[gate.name][0])}</td><td class="dim">${escapeHtml(GATE_WHAT[gate.name][1])}</td><td class="num">${gate.ok}/${gate.entries}${gate.failed.length ? ` <span class="chip riskli">${gate.failed.length} uyarı</span>` : ''}</td></tr>`,
+        )
+        .join('')}</tbody></table></div>
+<h2>Kılavuz ayrıştırma</h2>
+<div class="table-wrap"><table><thead><tr><th>dönem</th><th>düzey</th><th class="num">program</th><th class="num">nitelik kodu</th><th class="num">kadro satırı</th><th class="num">atılan satır</th></tr></thead><tbody>${guideRows || '<tr><td colspan="6">Kılavuz verisi yok.</td></tr>'}</tbody></table></div>
+<p style="font-size:.9rem;color:var(--ink-muted)">“Atılan satır” kılavuz tablosundaki başlık/açıklama satırlarıdır (ör. “SINIFI”, “*Aranan Nitelikleri mutlaka okuyunuz”). Kadro satırı sayısı sonuç belgelerindekiyle birebir eşleşmeden veri yayımlanmaz.</p>
+<h2>Bilinen veri kusurları</h2>
+<p>Aşağıdakiler tespit edildi ve yayımlanan veride düzeltildi. Liste açık: yeni bir kusur bulunursa buraya yazılır.</p>
+<ul class="limit-list">
+<li><strong>Kılavuz PDF'inde taşan hücreler:</strong> uzun kurum adları 1–3 satıra bölünüyor; <code>-layout</code> çıkarımı satırın puan hücrelerini düşürüyordu (%44 satır). <code>-table</code> çıkarımına geçildi, taşan parçalar geçmiş dönem kaydıyla birleştirildi. Kurum eşleşmesi bu yüzden %30–60'ta kalıyor.</li>
+<li><strong>Justified hücrelerde çift boşluk:</strong> “KORUMA VE  GÜVENLİK  GÖREVLİSİ” gibi değerler aynı unvanı sözlükte 2–3 kez ayrı ad olarak gösteriyordu; boşluklar normalize edildi (57 → 52 unvan).</li>
+<li><strong>Ön lisans “DÖNER SERMAYE”:</strong> teşkilat alanıdır, il değildir. İl sanıldığında 157 satırın ili kayıyordu; teşkilat olarak sınıflanıyor.</li>
+<li><strong>Ortaöğretim nitelik sözlüğü:</strong> kod + alan/dal başına bir satır (aynı kod 3 kez). Kod bazında birleştirildi.</li>
+<li><strong>kpssden.com eksik satır:</strong> bağımsız veri setinde <code>301017843</code> kodu yok. D kapısı bu tek kod için “eksik satır” toleransı tanır; ÖSYM özet sayıları bizim toplamlarımızı doğruluyor.</li>
+<li><strong>Puanı olmayan satır:</strong> kural <code>yerleşen = 0</code>'dır, “boş kontenjan &gt; 0” değil. Kısmen dolan bir kadronun (2/1/1) taban puanı vardır.</li>
+</ul>
+<h2>Yeniden üretim</h2>
+<p>Site ve veri tamamen bu depodaki komutlarla üretilir; çalışma anında dış servise bağlanmaz.</p>
+<pre class="code-block"><code>node pipeline/run.mjs fetch --all     # ÖSYM belgelerini indir (UA + Referer gerekir)
+node pipeline/run.mjs parse          # sonuç belgeleri → data/rounds/&lt;dönem&gt;
+node pipeline/run.mjs guide          # kılavuz → program/nitelik/kadro tablosu
+node pipeline/run.mjs gate           # A–F veri kapıları
+node pipeline/run.mjs backtest       # geri test + σ
+node pipeline/run.mjs predict        # tahmin + bantlar
+node web/build.mjs                   # dist/ (statik site)
+npm test &amp;&amp; npm run smoke            # 38 birim testi + tarayıcı kontrolleri</code></pre>
 <h2>Kişisel veri</h2>
-<p>Bu sürümde hesap yoktur: girdiğiniz puan, program ve liste yalnızca tarayıcınızda (<code>localStorage</code>) tutulur, sunucuya gönderilmez. Bağlantı paylaştığınızda liste URL'in içinde taşınır.</p>
+<p>Bu sürümde hesap yoktur: girdiğiniz puan, program ve liste yalnızca tarayıcınızda (<code>localStorage</code>) tutulur, sunucuya gönderilmez. Bağlantı paylaştığınızda liste URL'in içinde taşınır — sunucuda saklanmaz. Kalabalık simülasyonu (puan havuzu) ileride eklenirse ayrı bir aydınlatma metni ve açık rıza gerekir; bu sürümde yok.</p>
 <h2>Atıf</h2>
 <p>Veri ÖSYM'nin kamuya açık belgelerinden türetilmiştir. Çapraz doğrulama için kpssden.com veri seti (CC BY 4.0) kullanılmıştır: “KPSSDEN (kpssden.com), ÖSYM verilerinden derlenmiştir.”</p>`,
     }),

@@ -215,3 +215,21 @@ tarayıcı içi süzgeç (`dizin.js`, 52 + 81 satır için yeterli). Unvan ve il
 Veri düzeltmesi: sonuç PDF'lerindeki justified hücreler çift boşluk taşıyordu
 ("KORUMA VE  GÜVENLİK  GÖREVLİSİ"), bu yüzden aynı unvan sözlükte 2-3 ayrı ad olarak
 görünüyordu. `parse-results` artık `norm()` uyguluyor: 57 → **52** unvan, 145 → 140 sayfa.
+
+### Metodoloji ve kaynak sayfaları derinleştirildi (2026-11-12)
+
+İki sayfa da düz yazı + çıplak tabloydu. Artık ölçüm verisinden üretiliyor:
+
+**/metodoloji.html** — σ/MAE tile'ları · çapa tablosu (bu dönem satır sayısı + payı +
+geri test hatası: unvan+il 885 satır %80 hata 4,48; kadro kodu 165 satır %14,9 hata 8,58;
+unvan 42 satır hata 3,76) · bant tablosu (geri testte payı: garanti %17,2, hedef %14,8,
+riskli %25,1, uzak %42,9) · dönem çifti bazında geri test (MAE 3,45–6,29, aralık isabeti
+%22,4–53,3) · **Sınırlar** (5 madde) · **Künye** (dönem, çiftler, 2878 karşılaştırma).
+
+**/veri-kaynaklari.html** — 4 tile (3 dönem · 4305 satır · 2215 program kaydı · 6 kapı) ·
+belge→alan eşlemesi · **dönem envanteri** (9 düzey satırı + 3 toplam, ÖSYM tercih yapan
+sayısıyla; toplam satırı ÖSYM sayfasına bağlı) · **kapı tablosu** (A–F, 9/9 … 3/3) ·
+**kılavuz ayrıştırma** (program/nitelik/satır/atılan satır) · **bilinen veri kusurları**
+(6 madde) · **yeniden üretim komutları**.
+
+Kapı: `npm test` 38 + smoke 25, hepsi geçti.

@@ -400,3 +400,15 @@ a.btn.ghost:hover { border-color: var(--ink-soft); }
 .dizin-grid th { font-size: 9px; letter-spacing: 0.08em; }
 .dizin-grid td a { text-decoration: none; }
 .dizin-grid td a:hover { text-decoration: underline; }
+
+/* metodoloji: sınırlar listesi ve komut bloğu */
+.limit-list { margin: 12px 0 0; padding-inline-start: 18px; display: grid; gap: 8px; }
+.limit-list li { color: var(--ink-muted); line-height: 1.5; }
+.limit-list li strong { color: var(--ink); }
+.code-block {
+  margin-block-start: 12px; padding: 14px 16px; overflow-x: auto;
+  background: color-mix(in oklab, var(--panel) 92%, black);
+  border: 1px solid var(--line); border-radius: 8px;
+  font-family: var(--mono); font-size: 12px; line-height: 1.7; color: var(--ink-muted);
+  white-space: pre; tab-size: 2;
+}
