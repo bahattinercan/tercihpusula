@@ -13,6 +13,7 @@ const ROUNDS = join(ROOT, 'data', 'rounds');
 const DIST = join(ROOT, 'dist');
 const LEVELS = ['lisans', 'onlisans', 'ortaogretim'];
 const LEVEL_LABEL = { lisans: 'Lisans (P3)', onlisans: 'Ön lisans (P93)', ortaogretim: 'Ortaöğretim (P94)' };
+const ROUND_DIRS = readdirSync(ROUNDS).filter((name) => /^\d{4}-\d$/.test(name)).sort();
 
 const readJson = (path) => JSON.parse(readFileSync(path, 'utf8'));
 const slugify = (text) =>
@@ -319,8 +320,15 @@ function main() {
       description: 'Tahmini taban puan nasıl hesaplanır, geçmiş dönemlerde ne kadar hata yaptı, bantlar ne anlama gelir.',
       current: '/metodoloji.html',
       round,
-      body: `<h1>Metodoloji</h1>
+      body: `<p class="kicker">ölçüm · ${escapeHtml(round)}</p>
+<h1>Metodoloji</h1>
 <p class="lede">Bu sayfa, üründeki her sayının nereden geldiğini ve ne kadar yanılabileceğini açıklar. Gizli model yok.</p>
+<div class="tiles">${(backtest?.summary ?? [])
+        .map(
+          (entry) =>
+            `<div class="tile"><span class="label">${LEVEL_LABEL[entry.level] ?? entry.level}</span><span class="value">±${(backtest.sigma[entry.level] ?? 0).toFixed(1).replace('.', ',')}</span><span class="unit">puan · hata ${entry.mae?.toFixed(2).replace('.', ',') ?? '—'}</span></div>`,
+        )
+        .join('')}</div>
 <h2>Tahmini taban puan</h2>
 <p>Bir kadro satırı için sırayla şu üç çapa denenir: <strong>(1)</strong> aynı unvan + aynı ildeki satırların geçen dönem taban puanlarının ortancası, <strong>(2)</strong> aynı kadro kodunun geçen dönem taban puanı, <strong>(3)</strong> aynı unvanın ülke genelindeki ortancası. Bulunan değer, kontenjan değişimine göre küçük bir düzeltme alır (kontenjan artarsa kapanış puanı aşağı).</p>
 <p>Çapa sırası tahmin değil, ölçüm sonucudur: iki dönem çifti üzerinde yapılan geri testte “aynı unvan + il” çapası, “aynı kadro kodu” çapasından daha düşük hata verdi (aynı kadro kodu yeniden ilan edildiğinde nitelikleri ve dolayısıyla aday havuzu değişebiliyor).</p>
@@ -354,8 +362,15 @@ function main() {
       description: 'Kadro tabloları, taban puanlar ve nitelik kodları hangi ÖSYM belgelerinden üretildi.',
       current: '/veri-kaynaklari.html',
       round,
-      body: `<h1>Veri ve kaynak</h1>
+      body: `<p class="kicker">kaynak defteri</p>
+<h1>Veri ve kaynak</h1>
 <p class="lede">Tüm sayılar ÖSYM'nin kamuya açık belgelerinden üretilir; her dönem değişmez bir anlık görüntü olarak saklanır.</p>
+<div class="tiles">
+  <div class="tile"><span class="label">dönem</span><span class="value">${ROUND_DIRS.length}</span><span class="unit">anlık görüntü</span></div>
+  <div class="tile"><span class="label">kadro satırı</span><span class="value">${ROUND_DIRS.reduce((sum, dir) => sum + LEVELS.reduce((inner, level) => { const file = join(ROUNDS, dir, `${level}.json`); return inner + (existsSync(file) ? readJson(file).rows.length : 0); }, 0), 0)}</span><span class="unit">3 seviye toplamı</span></div>
+  <div class="tile"><span class="label">veri kapısı</span><span class="value">6</span><span class="unit">A–F</span></div>
+  <div class="tile muted"><span class="label">birim testi</span><span class="value">38</span><span class="unit">node:test</span></div>
+</div>
 <div class="table-wrap"><table><thead><tr><th>Veri</th><th>Kaynak</th></tr></thead><tbody>
 <tr><td>Kadro tabloları ve aranan nitelik kodları</td><td>ÖSYM tercih kılavuzu Tablo-1/2/3</td></tr>
 <tr><td>Nitelik kodu sözlüğü</td><td>ÖSYM nitelik kodları ekleri (düzey başına ayrı dosya)</td></tr>
@@ -373,10 +388,40 @@ function main() {
     }),
   );
 
-  // ---- boş kalan kadrolar
+  // ---- boş kalan kadrolar (3 dönem karşılaştırmalı)
+  const unvanHistory = new Map();
+  const roundStats = ROUND_DIRS.map((dir) => {
+    const stats = { round: dir.replace('-', '/'), rows: 0, kontenjan: 0, bos: 0, bosKontenjan: 0, kismi: 0, eksik: 0 };
+    for (const level of LEVELS) {
+      const file = join(ROUNDS, dir, `${level}.json`);
+      if (!existsSync(file)) continue;
+      for (const row of readJson(file).rows) {
+        const kontenjan = row.kontenjan ?? 0;
+        stats.rows += 1;
+        stats.kontenjan += kontenjan;
+        if (row.yerlesen === 0) {
+          stats.bos += 1;
+          stats.bosKontenjan += kontenjan;
+        } else if (row.yerlesen < kontenjan) {
+          stats.kismi += 1;
+          stats.eksik += kontenjan - row.yerlesen;
+        }
+        if (!row.unvan) continue;
+        const entry = unvanHistory.get(row.unvan) ?? { rows: 0, bos: 0 };
+        entry.rows += 1;
+        if (row.yerlesen === 0) entry.bos += 1;
+        unvanHistory.set(row.unvan, entry);
+      }
+    }
+    return stats;
+  });
+
   const emptyRows = Object.values(levels).flatMap((data) =>
     data.rows.filter((row) => row.bos).map((row) => ({ ...row, level: data.level })),
   );
+  const thisRound = roundStats.find((stats) => stats.round === round) ?? { bos: 0, bosKontenjan: 0, kismi: 0, eksik: 0 };
+  const pct = (part, whole) => (whole ? `${((part / whole) * 100).toFixed(1).replace('.', ',')}%` : '—');
+
   writePage(
     'bos-kalan-kadrolar.html',
     layout({
@@ -384,18 +429,45 @@ function main() {
       description: 'KPSS son yerleştirmede kimsenin yerleşmediği kadro satırları: bu dönemin en yüksek fırsat adayları.',
       current: '/bos-kalan-kadrolar.html',
       round,
-      body: `<h1>Boş kalan kadrolar</h1>
+      body: `<p class="kicker">KPSS ${escapeHtml(round)} · fırsat taraması</p>
+<h1>Boş kalan kadrolar</h1>
 <p class="lede">${escapeHtml(round)} yerleştirmesinde kontenjanı dolmayan ${emptyRows.length} satır. Boş kalması “kolay kapanır” demek değildir; ama adayların bu satırları hiç görmediğinin en somut kanıtıdır.</p>
+<div class="tiles">
+  <div class="tile"><span class="label">bu dönem boş</span><span class="value">${thisRound.bos}</span><span class="unit">kadro satırı</span></div>
+  <div class="tile"><span class="label">boş kontenjan</span><span class="value">${thisRound.bosKontenjan}</span><span class="unit">adet</span></div>
+  <div class="tile"><span class="label">kısmen dolan</span><span class="value">${thisRound.kismi}</span><span class="unit">${thisRound.eksik} kontenjan eksik</span></div>
+  <div class="tile muted"><span class="label">3 dönemde boş</span><span class="value">${roundStats.reduce((sum, stats) => sum + stats.bos, 0)}</span><span class="unit">${roundStats.length} dönem</span></div>
+</div>
+<h2>Dönem bazında</h2>
+<div class="table-wrap"><table><thead><tr><th>dönem</th><th class="num">kadro satırı</th><th class="num">kontenjan</th><th class="num">tam boş</th><th class="num">boş kontenjan</th><th class="num">kısmen dolan</th><th class="num">boş oranı</th></tr></thead><tbody>${roundStats
+        .map(
+          (stats) =>
+            `<tr${stats.round === round ? ' style="background:color-mix(in oklab, var(--accent) 8%, transparent)"' : ''}><td class="mono">${escapeHtml(stats.round)}</td><td class="num">${stats.rows}</td><td class="num">${stats.kontenjan}</td><td class="num">${stats.bos}</td><td class="num dim">${stats.bosKontenjan}</td><td class="num">${stats.kismi}</td><td class="num">${pct(stats.bos, stats.rows)}</td></tr>`,
+        )
+        .join('')}</tbody></table></div>
+<h2>Bu dönem boş kalan satırlar</h2>
 ${
   emptyRows.length
-    ? `<div class="table-wrap"><table><thead><tr><th>Düzey</th><th>Unvan</th><th>Kurum</th><th>İl</th><th class="num">Kont.</th></tr></thead><tbody>${emptyRows
+    ? `<div class="table-wrap"><table><thead><tr><th>düzey</th><th>unvan</th><th>kurum</th><th>il</th><th class="num">kont.</th></tr></thead><tbody>${emptyRows
         .map(
           (row) =>
-            `<tr><td>${LEVEL_LABEL[row.level]}</td><td>${escapeHtml(row.unvan)}</td><td>${escapeHtml(row.kurum)}</td><td>${escapeHtml(row.il)}</td><td class="num">${row.knt}</td></tr>`,
+            `<tr><td class="mono" style="font-size:11px;color:var(--ink-soft)">${LEVEL_LABEL[row.level]}</td><td><a href="/kadrolar/unvan-${slugify(row.unvan)}.html"><strong>${escapeHtml(row.unvan)}</strong></a></td><td><div class="sub">${escapeHtml(row.kurum)}</div></td><td>${escapeHtml(row.il)}</td><td class="num">${row.knt}</td></tr>`,
         )
         .join('')}</tbody></table></div>`
-    : '<p>Bu dönemde boş kalan satır yok.</p>'
-}`,
+    : '<p class="count">Bu dönemde tamamen boş kalan satır yok — kontenjanların tamamı doldu.</p>'
+}
+<h2>Hangi unvanlar boş kalıyor</h2>
+<p class="count" style="margin-block-end:8px">${roundStats.length} dönemin toplamı; boş sayısına göre azalan</p>
+<div class="table-wrap"><table><thead><tr><th>unvan</th><th class="num">satır</th><th class="num">boş</th><th class="num">boş oranı</th></tr></thead><tbody>${[...unvanHistory]
+        .filter(([, entry]) => entry.bos > 0)
+        .sort((a, b) => b[1].bos - a[1].bos)
+        .slice(0, 12)
+        .map(
+          ([unvan, entry]) =>
+            `<tr><td><a href="/kadrolar/unvan-${slugify(unvan)}.html">${escapeHtml(unvan)}</a></td><td class="num">${entry.rows}</td><td class="num">${entry.bos}</td><td class="num dim">${pct(entry.bos, entry.rows)}</td></tr>`,
+        )
+        .join('')}</tbody></table></div>
+<div class="note"><strong>Nasıl okunur:</strong> Boş kalan satır, kontenjanı dolmayan kadrodur — aynı kod gelecek dönem yeniden açılırsa taban puanı düşük kalma eğilimindedir. Ama tek neden talep değildir: nitelik şartı ağır (sertifika, program kısıtı) ya da kadro uzak bir ilde olduğu için de boş kalır. Bu yüzden boş satırı görüp koşulsuz yazmak yerine <a href="/uygulama.html">uygulamada</a> program uygunluğunu kontrol edin.</div>`,
     }),
   );
 

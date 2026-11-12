@@ -230,6 +230,17 @@ async function main() {
     writeFileSync(join(SHOTS, 'uygulama-acik-tema.png'), Buffer.from(lightShot.data, 'base64'));
     await client.send('Emulation.setEmulatedMedia', { features: [] });
 
+    // boş kalan kadrolar: 3 dönem tablosu + unvan kırılımı
+    await client.send('Emulation.clearDeviceMetricsOverride');
+    await client.send('Page.navigate', { url: `http://127.0.0.1:${PORT}/bos-kalan-kadrolar.html` });
+    await sleep(500);
+    const roundRows = await evaluate(client, "document.querySelectorAll('main table')[0].querySelectorAll('tbody tr').length");
+    check('boş kalan: dönem tablosu dolu', roundRows >= 2, `${roundRows} dönem`);
+    const unvanBosRows = await evaluate(client, "document.querySelectorAll('main table')[2]?.querySelectorAll('tbody tr').length ?? 0");
+    check('boş kalan: unvan kırılımı var', unvanBosRows > 0, `${unvanBosRows} unvan`);
+    const bosShot = await client.send('Page.captureScreenshot', { format: 'png' });
+    writeFileSync(join(SHOTS, 'bos-kalan.png'), Buffer.from(bosShot.data, 'base64'));
+
     // kadro dizini: liste + tarayıcı içi süzgeç
     await client.send('Emulation.clearDeviceMetricsOverride');
     await client.send('Page.navigate', { url: `http://127.0.0.1:${PORT}/kadrolar/` });
@@ -265,6 +276,16 @@ async function main() {
     const deepSelect = await evaluate(client, "document.querySelector('#unvan').value");
     check('derin bağlantı unvanı seçiyor', deepSelect === 'TEKNİKER', deepSelect || '(boş)');
     check('derin bağlantı satırları süzüyor', deepRows > 0 && deepRows < 400, `${deepRows} satır`);
+
+    // metodoloji ve kaynak sayfaları: tile şeridi + tablo
+    for (const [path, shot] of [['/metodoloji.html', 'metodoloji.png'], ['/veri-kaynaklari.html', 'veri-kaynaklari.png']]) {
+      await client.send('Page.navigate', { url: `http://127.0.0.1:${PORT}${path}` });
+      await sleep(400);
+      const tiles = await evaluate(client, "document.querySelectorAll('.tiles .tile').length");
+      check(`${path}: tile şeridi var`, tiles >= 3, `${tiles} tile`);
+      const png = await client.send('Page.captureScreenshot', { format: 'png' });
+      writeFileSync(join(SHOTS, shot), Buffer.from(png.data, 'base64'));
+    }
 
     // ana sayfa görüntüsü
     await client.send('Emulation.clearDeviceMetricsOverride');
