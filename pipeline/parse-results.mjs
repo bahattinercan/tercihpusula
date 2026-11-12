@@ -98,10 +98,12 @@ export function parseResultsText(text) {
     const { kurum, il, teskilat } = splitKurum(kurumRaw);
     rows.push({
       kod: codeMatch[1],
-      kurum,
-      il,
+      // hücre içi çift boşluk (justified metin) tek boşluğa indirilir: aksi halde
+      // aynı unvan sözlükte iki ayrı ad olarak görünür
+      kurum: norm(kurum),
+      il: norm(il),
       teskilat,
-      unvan,
+      unvan: norm(unvan),
       kontenjan: Number(ints[0]),
       yerlesen: Number(ints[1]),
       bosKalan: Number(ints[2]),

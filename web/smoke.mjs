@@ -230,6 +230,34 @@ async function main() {
     writeFileSync(join(SHOTS, 'uygulama-acik-tema.png'), Buffer.from(lightShot.data, 'base64'));
     await client.send('Emulation.setEmulatedMedia', { features: [] });
 
+    // kadro dizini: liste + tarayıcı içi süzgeç
+    await client.send('Emulation.clearDeviceMetricsOverride');
+    await client.send('Page.navigate', { url: `http://127.0.0.1:${PORT}/kadrolar/` });
+    await sleep(500);
+    const unvanRows = await evaluate(client, "document.querySelectorAll('#unvan-rows tr[data-name]').length");
+    check('kadro dizini satırları render edildi', unvanRows > 0, `${unvanRows} unvan`);
+    const ilRows = await evaluate(client, "document.querySelectorAll('#il-rows tr[data-name]').length");
+    check('il listesi render edildi', ilRows > 0, `${ilRows} il`);
+    await evaluate(
+      client,
+      "(() => { const i = document.querySelector('#unvan-filter'); i.value = 'tekniker'; i.dispatchEvent(new Event('input')); })()",
+    );
+    await sleep(150);
+    const filtered = await evaluate(client, "document.querySelectorAll('#unvan-rows tr[data-name]:not([hidden])').length");
+    check('unvan süzgeci daraltıyor', filtered > 0 && filtered < unvanRows, `${unvanRows} → ${filtered}`);
+    const counter = await evaluate(client, "document.querySelector('#unvan-count').textContent");
+    check('süzgeç sayacı güncellendi', counter.includes('/'), counter);
+    const indexListShot = await client.send('Page.captureScreenshot', { format: 'png' });
+    writeFileSync(join(SHOTS, 'kadrolar.png'), Buffer.from(indexListShot.data, 'base64'));
+
+    // bir unvan sayfası
+    await client.send('Page.navigate', { url: `http://127.0.0.1:${PORT}/kadrolar/unvan-tekniker.html` });
+    await sleep(400);
+    const unvanPageRows = await evaluate(client, "document.querySelectorAll('main tbody tr').length");
+    check('unvan sayfası satırları var', unvanPageRows > 0, `${unvanPageRows} satır`);
+    const unvanShot = await client.send('Page.captureScreenshot', { format: 'png' });
+    writeFileSync(join(SHOTS, 'kadrolar-unvan.png'), Buffer.from(unvanShot.data, 'base64'));
+
     // ana sayfa görüntüsü
     await client.send('Emulation.clearDeviceMetricsOverride');
     await client.send('Page.navigate', { url: `http://127.0.0.1:${PORT}/` });

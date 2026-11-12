@@ -75,6 +75,7 @@ ${body}
 </main>
 </div>
 ${current === '/uygulama.html' ? '<script src="/assets/app.js" defer></script>' : ''}
+${body.includes('dizin-filter') ? '<script src="/assets/dizin.js" defer></script>' : ''}
 </body>
 </html>`;
 }
@@ -379,43 +380,87 @@ ${
   );
 
   // ---- SEO: unvan ve il sayfaları
+  const groupStats = (rows) => {
+    const tabans = rows.map((row) => row.taban).filter((value) => value !== null && value !== undefined);
+    return {
+      rows: rows.length,
+      kontenjan: rows.reduce((sum, row) => sum + (row.knt ?? 0), 0),
+      bos: rows.filter((row) => row.bos).length,
+      minTaban: tabans.length ? Math.min(...tabans) : null,
+      maxTaban: tabans.length ? Math.max(...tabans) : null,
+    };
+  };
+  const rangeText = (stats) => (stats.minTaban === null ? '—' : `${fmt(stats.minTaban)} – ${fmt(stats.maxTaban)}`);
+  // dar sütunlar için tek ondalıklı kısa aralık
+  const rangeShort = (stats) =>
+    stats.minTaban === null
+      ? '—'
+      : `${stats.minTaban.toFixed(1).replace('.', ',')} – ${stats.maxTaban.toFixed(1).replace('.', ',')}`;
+
+  const statTiles = (stats, extra = '') => `<div class="tiles">
+  <div class="tile"><span class="label">kadro satırı</span><span class="value">${stats.rows}</span><span class="unit">bu grupta</span></div>
+  <div class="tile"><span class="label">kontenjan</span><span class="value">${stats.kontenjan}</span><span class="unit">toplam adet</span></div>
+  <div class="tile"><span class="label">taban puan</span><span class="value" style="font-size:20px">${rangeText(stats)}</span><span class="unit">geçen dönem aralığı</span></div>
+  <div class="tile muted"><span class="label">boş kalan</span><span class="value">${stats.bos}</span><span class="unit">${extra || 'satır'}</span></div>
+</div>`;
+
   const unvanIndex = new Map();
   const ilIndex = new Map();
   for (const data of Object.values(levels)) {
     for (const row of data.rows) {
       if (!row.unvan || !row.il) continue;
-      const uKey = row.unvan;
-      if (!unvanIndex.has(uKey)) unvanIndex.set(uKey, []);
-      unvanIndex.get(uKey).push({ ...row, level: data.level });
+      if (!unvanIndex.has(row.unvan)) unvanIndex.set(row.unvan, []);
+      unvanIndex.get(row.unvan).push({ ...row, level: data.level });
       if (!ilIndex.has(row.il)) ilIndex.set(row.il, []);
       ilIndex.get(row.il).push({ ...row, level: data.level });
     }
   }
 
   const renderRowTable = (rows, withLevel = true) =>
-    `<div class="table-wrap"><table><thead><tr>${withLevel ? '<th>Düzey</th>' : ''}<th>Unvan</th><th>Kurum</th><th>İl</th><th class="num">Kont.</th><th class="num">Geçen taban</th><th class="num">Tahmin</th></tr></thead><tbody>${rows
+    `<div class="table-wrap"><table><thead><tr>${withLevel ? '<th>düzey</th>' : ''}<th>unvan</th><th>kurum</th><th>il</th><th class="num">kont.</th><th class="num">geçen taban</th><th class="num">tahmin</th></tr></thead><tbody>${rows
       .slice(0, 300)
       .map(
         (row) =>
-          `<tr>${withLevel ? `<td>${LEVEL_LABEL[row.level]}</td>` : ''}<td>${escapeHtml(row.unvan)}</td><td>${escapeHtml(row.kurum)}</td><td>${escapeHtml(row.il)}</td><td class="num">${row.knt ?? '—'}</td><td class="num">${fmt(row.taban)}</td><td class="num">${fmt(row.tahmin?.puan)}</td></tr>`,
+          `<tr>${withLevel ? `<td class="mono" style="font-size:11px;letter-spacing:.06em;color:var(--ink-soft)">${row.level.slice(0, 3)}</td>` : ''}<td><strong>${escapeHtml(row.unvan)}</strong></td><td><div class="sub">${escapeHtml(row.kurum)}</div></td><td>${escapeHtml(row.il)}</td><td class="num">${row.knt ?? '—'}</td><td class="num dim">${fmt(row.taban)}</td><td class="num">${fmt(row.tahmin?.puan)}</td></tr>`,
       )
       .join('')}</tbody></table></div>`;
 
   const unvanLinks = [];
   for (const [unvan, rows] of unvanIndex) {
     const slug = `unvan-${slugify(unvan)}`;
-    unvanLinks.push({ href: `/kadrolar/${slug}.html`, label: unvan, count: rows.length });
+    const stats = groupStats(rows);
+    unvanLinks.push({ href: `/kadrolar/${slug}.html`, label: unvan, stats });
     const sorted = [...rows].sort((a, b) => (a.taban ?? 101) - (b.taban ?? 101));
+    const byIl = new Map();
+    for (const row of rows) {
+      if (!byIl.has(row.il)) byIl.set(row.il, []);
+      byIl.get(row.il).push(row);
+    }
+    const ilRows = [...byIl]
+      .map(([il, group]) => ({ il, stats: groupStats(group) }))
+      .sort((a, b) => b.stats.kontenjan - a.stats.kontenjan)
+      .slice(0, 12);
     writePage(
       `kadrolar/${slug}.html`,
       layout({
         title: `${unvan} kadroları, taban puanlar ve kontenjan — Tercih Pusulası`,
-        description: `${unvan} unvanıyla açılan ${rows.length} kadro satırı: kurum, il, kontenjan, geçen dönem taban puanı ve tahmini kapanış puanı.`,
+        description: `${unvan} unvanıyla açılan ${stats.rows} kadro satırı: kurum, il, kontenjan, geçen dönem taban puanı ve tahmini kapanış puanı.`,
         current: '/kadrolar/',
         round,
-        body: `<h1>${escapeHtml(unvan)}</h1>
-<p class="lede">${escapeHtml(round)} döneminde ${unvan} unvanıyla açılan ${rows.length} satır. En düşük geçen dönem taban puanından yükseğe sıralı.</p>
-<p><a href="/uygulama.html">Kendi puanınızla filtreleyin →</a></p>
+        body: `<p class="kicker">kadro dizini · unvan</p>
+<h1>${escapeHtml(unvan)}</h1>
+<p class="lede">KPSS ${escapeHtml(round)} döneminde bu unvanla ${stats.rows} satır açıldı; toplam kontenjan ${stats.kontenjan}. Taban puan aralığı ${rangeText(stats)}.</p>
+${statTiles(stats)}
+<p style="margin-block:16px 8px"><a class="btn" href="/uygulama.html?unvan=${encodeURIComponent(unvan)}">Bu unvanı uygulamada filtrele →</a></p>
+<h2>İl dağılımı</h2>
+<div class="table-wrap"><table><thead><tr><th>il</th><th class="num">satır</th><th class="num">kontenjan</th><th class="num">taban aralığı</th><th class="num">boş</th></tr></thead><tbody>${ilRows
+          .map(
+            (entry) =>
+              `<tr><td><a href="/kadrolar/il-${slugify(entry.il)}.html">${escapeHtml(entry.il)}</a></td><td class="num">${entry.stats.rows}</td><td class="num">${entry.stats.kontenjan}</td><td class="num dim">${rangeShort(entry.stats)}</td><td class="num">${entry.stats.bos}</td></tr>`,
+          )
+          .join('')}</tbody></table></div>
+<h2>Satırlar</h2>
+<p class="count" style="margin-block-end:8px">geçen dönem taban puanına göre artan</p>
 ${renderRowTable(sorted)}`,
       }),
     );
@@ -424,41 +469,73 @@ ${renderRowTable(sorted)}`,
   const ilLinks = [];
   for (const [il, rows] of ilIndex) {
     const slug = `il-${slugify(il)}`;
-    ilLinks.push({ href: `/kadrolar/${slug}.html`, label: il, count: rows.length });
+    const stats = groupStats(rows);
+    ilLinks.push({ href: `/kadrolar/${slug}.html`, label: il, stats });
     const sorted = [...rows].sort((a, b) => (a.taban ?? 101) - (b.taban ?? 101));
     writePage(
       `kadrolar/${slug}.html`,
       layout({
         title: `${il} KPSS kadroları ve taban puanlar — Tercih Pusulası`,
-        description: `${il} ilinde ${escapeHtml(round)} döneminde açılan ${rows.length} kadro: kurum, unvan, kontenjan ve taban puanlar.`,
+        description: `${il} ilinde ${escapeHtml(round)} döneminde açılan ${stats.rows} kadro: kurum, unvan, kontenjan ve taban puanlar.`,
         current: '/kadrolar/',
         round,
-        body: `<h1>${escapeHtml(il)}</h1>
-<p class="lede">${il} ilinde açılan ${rows.length} satır, geçen dönem taban puanına göre sıralı.</p>
+        body: `<p class="kicker">kadro dizini · il</p>
+<h1>${escapeHtml(il)}</h1>
+<p class="lede">${il} ilinde açılan ${stats.rows} satır; toplam kontenjan ${stats.kontenjan}. Taban puan aralığı ${rangeText(stats)}.</p>
+${statTiles(stats)}
+<p style="margin-block:16px 8px"><a class="btn" href="/uygulama.html?il=${encodeURIComponent(il)}">Bu ili uygulamada filtrele →</a></p>
+<h2>Satırlar</h2>
+<p class="count" style="margin-block-end:8px">geçen dönem taban puanına göre artan</p>
 ${renderRowTable(sorted)}`,
       }),
     );
   }
 
+  const totalUnvanRows = unvanLinks.reduce((sum, link) => sum + link.stats.rows, 0);
+  const indexRows = (links) =>
+    links
+      .map(
+        (link) =>
+          `<tr data-name="${escapeHtml(link.label)}"><td><a href="${link.href}">${escapeHtml(link.label)}</a></td><td class="num">${link.stats.rows}</td><td class="num">${link.stats.kontenjan}</td><td class="num dim">${rangeShort(link.stats)}</td><td class="num">${link.stats.bos}</td></tr>`,
+      )
+      .join('');
+
   writePage(
     'kadrolar/index.html',
     layout({
       title: 'Kadrolar: unvan ve il dizini — Tercih Pusulası',
-      description: 'Unvan ve il bazında KPSS kadro listeleri, kontenjanlar ve taban puanlar.',
+      description: 'Unvan ve il bazında KPSS kadro listeleri, kontenjanlar, taban puanlar ve boş kalan kadrolar.',
       current: '/kadrolar/',
       round,
-      body: `<h1>Kadro dizini</h1>
-<p class="lede">${unvanLinks.length} unvan ve ${ilLinks.length} il sayfası.</p>
-<h2>Unvana göre</h2>
-<ul>${unvanLinks
-        .sort((a, b) => b.count - a.count)
-        .map((link) => `<li><a href="${link.href}">${escapeHtml(link.label)}</a> <span class="count">(${link.count})</span></li>`)
-        .join('')}</ul>
-<h2>İle göre</h2>
-<ul>${ilLinks
-        .sort((a, b) => a.label.localeCompare(b.label, 'tr'))
-        .map((link) => `<li><a href="${link.href}">${escapeHtml(link.label)}</a> <span class="count">(${link.count})</span></li>`)
-        .join('')}</ul>`,
+      body: `<p class="kicker">KPSS ${escapeHtml(round)} · kadro dizini</p>
+<h1>Kadro dizini</h1>
+<p class="lede">${unvanLinks.length} unvan ve ${ilLinks.length} il. Her satır bir grubun toplam kontenjanını, geçen dönem taban puanı aralığını ve boş kalan kadro sayısını taşır.</p>
+<div class="tiles">
+  <div class="tile"><span class="label">unvan</span><span class="value">${unvanLinks.length}</span><span class="unit">grup</span></div>
+  <div class="tile"><span class="label">il</span><span class="value">${ilLinks.length}</span><span class="unit">grup</span></div>
+  <div class="tile"><span class="label">kadro satırı</span><span class="value">${totalUnvanRows}</span><span class="unit">3 seviye</span></div>
+  <div class="tile muted"><span class="label">kontenjan</span><span class="value">${totals.kontenjan}</span><span class="unit">toplam adet</span></div>
+</div>
+<div class="dizin-grid">
+  <section class="card">
+    <div class="panel-title"><h3>Unvana göre</h3><span class="stamp" id="unvan-count">${unvanLinks.length}</span></div>
+    <label for="unvan-filter">unvan ara</label>
+    <input id="unvan-filter" class="dizin-filter" data-target="unvan-rows" data-count="unvan-count" type="search" placeholder="ör. tekniker, memur, mühendis">
+    <div class="table-wrap" style="margin-block-start:12px;border:0">
+      <table><thead><tr><th>unvan</th><th class="num">satır</th><th class="num">kont.</th><th class="num">taban aralığı</th><th class="num">boş</th></tr></thead>
+      <tbody id="unvan-rows">${indexRows([...unvanLinks].sort((a, b) => b.stats.rows - a.stats.rows))}</tbody></table>
+    </div>
+  </section>
+  <section class="card">
+    <div class="panel-title"><h3>İle göre</h3><span class="stamp" id="il-count">${ilLinks.length}</span></div>
+    <label for="il-filter">il ara</label>
+    <input id="il-filter" class="dizin-filter" data-target="il-rows" data-count="il-count" type="search" placeholder="ör. ankara, istanbul, izmir">
+    <div class="table-wrap" style="margin-block-start:12px;border:0">
+      <table><thead><tr><th>il</th><th class="num">satır</th><th class="num">kont.</th><th class="num">taban aralığı</th><th class="num">boş</th></tr></thead>
+      <tbody id="il-rows">${indexRows([...ilLinks].sort((a, b) => a.label.localeCompare(b.label, 'tr')))}</tbody></table>
+    </div>
+  </section>
+</div>`,
     }),
   );
 

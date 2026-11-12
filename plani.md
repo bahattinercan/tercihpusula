@@ -204,3 +204,14 @@ Garnitür kullanılmadı (3+ stil kimlik kaybı).
 - Bant durumu artık emoji değil: 7×7 LED + mono etiket; eşik değeri satırın "tahmin" sütununda.
 - Doğrulama: `npm run smoke` 14 kontrol (iki tema, 1280/390 px taşma yok) + ekran görüntüleri
   `dist/.shots/` (ana-sayfa, uygulama, açık tema, mobil).
+
+### Kadro dizini geliştirmesi (2026-11-12)
+
+`/kadrolar/` ham `<ul>` listesiydi. Yerine: 4 metrik tile + iki sütunlu dizin
+(unvan / il) her satırda satır sayısı, kontenjan, geçen dönem taban aralığı ve boş kalan;
+tarayıcı içi süzgeç (`dizin.js`, 52 + 81 satır için yeterli). Unvan ve il sayfalarına
+4 tile + il dağılımı tablosu + `/uygulama.html?unvan=…` / `?il=…` derin bağlantısı eklendi.
+
+Veri düzeltmesi: sonuç PDF'lerindeki justified hücreler çift boşluk taşıyordu
+("KORUMA VE  GÜVENLİK  GÖREVLİSİ"), bu yüzden aynı unvan sözlükte 2-3 ayrı ad olarak
+görünüyordu. `parse-results` artık `norm()` uyguluyor: 57 → **52** unvan, 145 → 140 sayfa.

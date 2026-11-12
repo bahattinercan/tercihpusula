@@ -213,11 +213,11 @@
     "ok": true,
     "warnings": [
       "TEKNİKER: kontenjan 107 → 163",
-      "KORUMA VE GÜVENLİK  GÖREVLİSİ: kontenjan 28 → 70",
+      "KORUMA VE GÜVENLİK GÖREVLİSİ: kontenjan 121 → 160",
       "SAĞLIK TEKNİKERİ: kontenjan 54 → 73",
-      "BÜRO PERSONELİ: kontenjan 49 → 183",
+      "BÜRO PERSONELİ: kontenjan 49 → 499",
       "DESTEK PERSONELİ: kontenjan 6 → 107",
-      "KORUMA  VE  GÜVENLİK  GÖREVLİSİ: kontenjan 12 → 75"
+      "MEMUR (HAT BAKIM ONARIM MEMURU): kontenjan 24 → 137"
     ]
   },
   {
@@ -262,7 +262,7 @@
     "level": "ortaogretim",
     "ok": true,
     "warnings": [
-      "DESTEK PERSONELİ: kontenjan 162 → 358",
+      "DESTEK PERSONELİ: kontenjan 162 → 510",
       "HEMŞİRE: kontenjan 22 → 36",
       "VETERİNER SAĞLIK TEKNİSYENİ: kontenjan 7 → 11"
     ]
@@ -311,8 +311,7 @@
     "warnings": [
       "AVUKAT: kontenjan 30 → 74",
       "BİLGİSAYAR İŞLETMENİ: kontenjan 21 → 34",
-      "VETERİNER: kontenjan 12 → 18",
-      "VERİ HAZIRLAMA VE KONTROL  İŞLETMENİ: kontenjan 6 → 8"
+      "VETERİNER: kontenjan 12 → 18"
     ]
   },
   {
@@ -332,16 +331,16 @@
     "round": "2026/1",
     "level": "lisans",
     "ok": true,
-    "detail": "tablo↔sonuç: il %99.6 · kontenjan %100.0 · unvan %98.6 · kurum %43.6",
+    "detail": "tablo↔sonuç: il %99.6 · kontenjan %100.0 · unvan %99.3 · kurum %57.3",
     "rates": {
-      "kurum": 0.436036036036036,
-      "unvan": 0.9855855855855856,
+      "kurum": 0.572972972972973,
+      "unvan": 0.9927927927927928,
       "il": 0.9963963963963964,
       "kontenjan": 1
     },
     "compared": 555,
     "warnings": [
-      "kurum metni %43.6 (sarılmış hücreler)"
+      "kurum metni %57.3 (sarılmış hücreler)"
     ],
     "problems": [],
     "problemCount": 0
@@ -390,7 +389,6 @@
     "warnings": [
       "TEKNİKER: kontenjan 163 → 451",
       "MEMUR: kontenjan 31 → 46",
-      "KORUMA VE GÜVENLİK GÖREVLİSİ: kontenjan 15 → 29",
       "VERİ HAZIRLAMA VE KONTROL İŞLETMENİ: kontenjan 7 → 13"
     ]
   },
@@ -409,17 +407,17 @@
     "round": "2026/1",
     "level": "onlisans",
     "ok": true,
-    "detail": "tablo↔sonuç: il %100.0 · kontenjan %100.0 · unvan %88.3 · kurum %29.5",
+    "detail": "tablo↔sonuç: il %100.0 · kontenjan %100.0 · unvan %91.0 · kurum %30.5",
     "rates": {
-      "kurum": 0.2951219512195122,
-      "unvan": 0.8829268292682927,
+      "kurum": 0.3048780487804878,
+      "unvan": 0.9097560975609756,
       "il": 1,
       "kontenjan": 1
     },
     "compared": 410,
     "warnings": [
-      "kurum metni %29.5 (sarılmış hücreler)",
-      "unvan metni %88.3"
+      "kurum metni %30.5 (sarılmış hücreler)",
+      "unvan metni %91.0"
     ],
     "problems": [],
     "problemCount": 0
@@ -485,10 +483,10 @@
     "round": "2026/1",
     "level": "ortaogretim",
     "ok": true,
-    "detail": "tablo↔sonuç: il %100.0 · kontenjan %100.0 · unvan %99.3 · kurum %60.3",
+    "detail": "tablo↔sonuç: il %100.0 · kontenjan %100.0 · unvan %100.0 · kurum %60.3",
     "rates": {
       "kurum": 0.6028368794326241,
-      "unvan": 0.9929078014184397,
+      "unvan": 1,
       "il": 1,
       "kontenjan": 1
     },
