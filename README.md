@@ -4,7 +4,7 @@
 ÖSYM merkezî yerleştirmesinde "hangi kadro bana uygun, kapanış puanı ne olur, bu tercih gerçekçi mi"
 sorusunu ölçülebilir biçimde yanıtlar.
 
-`node ≥ 22` · `0 runtime dependency` · `139 static page` · `38 unit test` · `6 data gate (A–F)` · `32 browser check` · `tercihpusula.com`
+`node ≥ 22` · `0 runtime dependency` · `139 static page` · `38 unit test` · `6 data gate (A–F)` · `32 browser check` · `14 desktop check` · `tercihpusula.com`
 
 > **Resmî kaynak değildir.** Bağlayıcı olan, ilgili dönemin ÖSYM tercih kılavuzu ve
 > [ais.osym.gov.tr](https://ais.osym.gov.tr)'dir. Tahminler geçmiş yerleşmelere dayanır,
@@ -110,13 +110,14 @@ Tahmin, geçmiş dönemden üretilip sonraki dönemde sınanır: rolling origin,
 Çapa sırası tahmin değil, ölçüm sonucudur — "aynı kadro kodu" çapası (%14,9 kullanım) 8,58 puan
 hatayla, "aynı unvan + il" çapası (%80,0 kullanım) 4,48 puan hatayla çalışıyor.
 
-## Verification — three layers, all green
+## Verification — four layers, all green
 
 | Katman | Ne ölçer | Komut | Sonuç |
 |---|---|---|---|
 | Unit | parser, gate, eligibility, predictor | `npm test` | 38/38 |
 | Data gates | A resmî toplam · B şema · C dönem farkı · D bağımsız kaynak · E tablo↔sonuç · F alan doğruluğu | `node pipeline/run.mjs gate` | 9/9 · 9/9 · 9/9 · 9/9 · 3/3 · 3/3 |
 | Browser | gerçek sayfa: tablo, süzgeç, liste, paylaşım, XSS, başlıklar | `npm run smoke` | 32/32 |
+| Desktop | paketlenmiş exe: yerel kaynak, gömülü veri, liste kalıcılığı, dış gezinme engeli, yazdırma köprüsü | `npm run desktop:check` | 14/14 |
 
 Alan doğruluğu (kadro tablosu ↔ sonuç belgeleri): **il %99,6–100 · kontenjan %100 · unvan %88–100 ·
 kurum %30–61** (PDF'te taşan hücreler kurum metnini bozar; satır kimliği her zaman kadro kodudur).
@@ -159,6 +160,33 @@ verilebilir; bu makinede yalnız Git'in MSYS2 ağacında bulunuyor).
 | `node pipeline/run.mjs predict` | yeni dönem tahminleri + bantlar |
 | `npm run build` · `npm run smoke` · `npm test` | site · tarayıcı · birim testleri |
 | `npm run shots:docs` | `.shots/` ekran görüntülerini README'ye kopyala |
+| `npm run desktop:build` · `desktop:check` | Windows uygulamasını paketle · kabuk doğrulamasını koş |
+
+## Windows app
+
+`TercihPusula.exe` — portable, no installer, no network. Serves itself from a 127.0.0.1 listener.
+
+```bash
+npm run desktop:build     # dist.zip → icon → dotnet publish → build/desktop + portable zip
+npm run desktop:check     # 14-check desktop gate (exit 0/1)
+npm run gate:desktop      # web gate + desktop build + desktop check
+```
+
+| | |
+|---|---|
+| Runtime | .NET 11 WinForms + WebView2, single file (~2.2 MB) |
+| Content | `dist/` embedded in the exe, extracted to `%LOCALAPPDATA%\TercihPusula\app\<sha8>\` |
+| Origin | `http://127.0.0.1:47821` — loopback-only server, no external listener |
+| Data | 2026/1 snapshot; new round = new exe or a `data-override\` folder next to the exe |
+| Guards | external navigation blocked, downloads cancelled, permissions denied, devtools off in release |
+
+![Windows app: the published site inside the packaged shell](docs/screenshots/masaustu.png)
+
+<sub>Produced by launching the packaged exe and capturing its window (`PrintWindow`). No browser chrome, no address bar.</sub>
+
+The preference list lives in the WebView2 profile, so it survives app updates and follows the
+Windows user, not the folder. Architecture, verification table, troubleshooting and rollback:
+[`docs/desktop-app.md`](docs/desktop-app.md).
 
 ## Deploy
 
@@ -234,6 +262,32 @@ npm run gate                 # her şey, sırayla
 ```
 
 `npm install` yok; kurulacak paket yok. PDF metni için `pdftotext` gerekir (`PDFTOTEXT_BIN` ile yol verilebilir).
+
+## Windows uygulaması
+
+`TercihPusula.exe` — taşınabilir, kurulum yok, ağ yok. İçeriği 127.0.0.1 dinleyicisinden sunar.
+
+```bash
+npm run desktop:build     # dist.zip → ikon → dotnet publish → build/desktop + taşınabilir zip
+npm run desktop:check     # 14 kontrollük masaüstü kapısı (çıkış 0/1)
+npm run gate:desktop      # web kapısı + masaüstü paket + masaüstü kontrolü
+```
+
+| | |
+|---|---|
+| Çalışma zamanı | .NET 11 WinForms + WebView2, tek dosya (~2,2 MB) |
+| İçerik | `dist/` exe içine gömülü, `%LOCALAPPDATA%\TercihPusula\app\<sha8>\` altına çıkarılır |
+| Kaynak | `http://127.0.0.1:47821` — yalnız geri döngü (loopback), dışarıya açık port yok |
+| Veri | 2026/1 anlık görüntüsü; yeni dönem = yeni exe veya exe yanında `data-override\` klasörü |
+| Korumalar | dış gezinme engelli, indirme iptal, izinler reddedilir, sürümde devtools kapalı |
+
+![Windows uygulaması: paketlenmiş kabuk içinde yayımlanan site](docs/screenshots/masaustu.png)
+
+<sub>Paketlenmiş exe açılıp penceresi yakalanarak üretildi (`PrintWindow`). Tarayıcı çubuğu, adres satırı yok.</sub>
+
+Tercih listeniz WebView2 profilinde tutulur: uygulama güncellemelerinden etkilenmez, klasöre değil
+Windows kullanıcısına bağlıdır. Mimari, doğrulama tablosu, sorun giderme ve geri dönüş:
+[`docs/desktop-app.md`](docs/desktop-app.md).
 
 ## Güvenlik
 

@@ -82,7 +82,33 @@ npx wrangler pages deploy dist --project-name tercihpusula
 3. `/metodoloji` sayfasındaki tablo kendiliğinden güncellenir (build çıktısı).
 4. Boş kalan kadrolar sayfası yeni dönemin fırsatlarını gösterir.
 
-## 8. Bilinen tuzaklar
+## 8. Masaüstü sürümü (Windows uygulaması)
+
+Web yayınından sonra, aynı veriyle taşınabilir exe'yi üret:
+
+```bash
+npm run desktop:build     # dist.zip → ikon → dotnet publish → build/desktop + zip
+npm run desktop:check     # 14 kontrollük kabuk doğrulaması (çıkış 0/1)
+```
+
+Beklenen: `build/desktop/TercihPusula.exe` (~2,2 MB) ve `build/TercihPusula-win-x64-<dönem>.zip`
+(~1,3 MB). Zip'i paylaş; kurulum adımı yok, .NET 11 Desktop Runtime ve WebView2 gerekir
+(Windows 10/11'de WebView2 hazır gelir).
+
+Kapı düşerse:
+
+| Belirti | İlk bakılacak |
+|---|---|
+| `page-load` / `data-fetch` düşük | `dist/data/*.json` gömülü mü (`desktop:build` `dist.zip` üretti mi) |
+| `dir-redirect` düşük | `/kadrolar/` → `index.html` yönlendirmesi (`Shell.OnNavigationStarting`) |
+| `page-timings` 800 ms üstü | yerel sunucu (`LoopbackServer`) veya sayfaya eklenen yeni bir bağımlılık |
+| `shell-budget` 5000 ms üstü | soğuk açılış makine yavaşlığı; `--self-check` raporundaki `kabuk` ve `ilk boyama` süreleri |
+| `list-persist` düşük | WebView2 profili (`%LOCALAPPDATA%\TercihPusula\WebView2`) bozulmuş olabilir, sil |
+
+Veri güncellemesini exe yayımlamadan yapmak için: `npm run build` çıktısını (`dist/` içeriği)
+exe yanına `data-override\` olarak kopyala. Ayrıntı: [`docs/desktop-app.md`](docs/desktop-app.md).
+
+## 9. Bilinen tuzaklar
 
 - `dokuman.osym.gov.tr` düz isteğe **HTTP 200 + "Erişim Engellendi"** döner; referer ve
   `%PDF` sihirli bayt kontrolü olmadan indirme "başarılı" görünür.
@@ -93,3 +119,8 @@ npx wrangler pages deploy dist --project-name tercihpusula
   dışındaki değerler il sanılırsa il/ilçe kayması olur.
 - Tablo PDF'inde uzun kurum adları alt satıra taşar; kurum metni %30–60 doğrulukla okunur,
   bu yüzden geçmiş dönem kaydıyla tamamlanır. Satır kimliği her zaman kadro kodudur.
+- WebView2 sanal host'u **dizin URL'sini çözmez**: `https://tercihpusula.local/kadrolar/`
+  "navigation failed" ile düşer. Kabuk bunu çalışma anında `index.html`'e yönlendirir;
+  bu yüzden web çıktısındaki `href="/kadrolar/"` bağlantıları değiştirilmez.
+- Masaüstü kabuğunun kaynak adı (`DistBundle.Host`) **sabittir**: değiştirilirse her kullanıcının
+  kayıtlı tercih listesi sıfırlanır (localStorage origin'e bağlıdır).
