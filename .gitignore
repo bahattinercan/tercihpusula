@@ -1,9 +1,57 @@
+# Dependency-free project: nothing to install, but nothing may leak in either.
 node_modules/
+package-lock.json
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Pipeline inputs: large, re-downloadable, hashed in data/rounds manifest.
 data/raw/
+
+# Generated output.
 dist/
+build/
 .shots/
 .tmp/
-desktop/bin/
-desktop/obj/
+coverage/
+*.tsbuildinfo
+
+# .NET build output (desktop/).
+**/bin/
+**/obj/
 desktop/Resources/dist.zip
-build/
+*.user
+*.suo
+*.userprefs
+.vs/
+TestResults/
+
+# Local overrides that must never be committed.
+data-override/
+*.local
+
+# Secrets and environment.
+.env
+.env.*
+!.env.example
+
+# Deploy tooling cache.
+.wrangler/
+.vercel/
+
+# OS and editor noise.
+.DS_Store
+._*
+Thumbs.db
+desktop.ini
+*.lnk
+.vscode/
+.idea/
+*.swp
+
+# Logs and scratch files from local runs.
+*.log
+*.tmp
+*.bak
+*.orig
+*.rej

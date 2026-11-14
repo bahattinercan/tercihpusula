@@ -1,36 +1,31 @@
 # Tercih Pusulası
 
-**KPSS tercih karar destek aracı** — resmî olmayan, tamamen statik, bağımlılıksız.
-ÖSYM merkezî yerleştirmesinde "hangi kadro bana uygun, kapanış puanı ne olur, bu tercih gerçekçi mi"
-sorusunu ölçülebilir biçimde yanıtlar.
+**KPSS preference-list decision support** — unofficial, fully static, zero dependencies.
 
-`node ≥ 22` · `0 runtime dependency` · `139 static page` · `38 unit test` · `6 data gate (A–F)` · `32 browser check` · `14 desktop check` · `tercihpusula.com`
+Every KPSS term around 250,000 candidates fill 30 preferences. The three facts needed to decide —
+*can I apply to this cadre*, *what did it close at last term*, *what will it close at this term* —
+sit in three separate PDFs, and none of them tells you **how wrong it can be**. This project puts all
+three on one screen and publishes its own error rate.
 
-> **Resmî kaynak değildir.** Bağlayıcı olan, ilgili dönemin ÖSYM tercih kılavuzu ve
-> [ais.osym.gov.tr](https://ais.osym.gov.tr)'dir. Tahminler geçmiş yerleşmelere dayanır,
-> yerleşme garantisi vermez.
+[![Node](https://img.shields.io/badge/node-%E2%89%A522-3c873a?style=flat-square)](package.json)
+[![Runtime dependencies](https://img.shields.io/badge/runtime%20dependencies-0-1a5fd0?style=flat-square)](package.json)
+[![Static pages](https://img.shields.io/badge/static%20pages-139-1a5fd0?style=flat-square)](web/build.mjs)
+[![Tests](https://img.shields.io/badge/unit%20tests-38%2F38-3c873a?style=flat-square)](tests)
+[![Desktop](https://img.shields.io/badge/windows%20app-2.2%20MB-0078d4?style=flat-square)](docs/desktop-app.md)
+
+> **Not an official source.** The binding documents are the ÖSYM guide for the term and
+> [ais.osym.gov.tr](https://ais.osym.gov.tr). Predictions come from past placements and guarantee
+> nothing. This project is not affiliated with ÖSYM.
+
+**Contents** · [Screens](#screens) · [What it does](#what-it-does) · [How it works](#how-it-works) ·
+[Accuracy](#accuracy--published-not-promised) · [Data model](#data-model) ·
+[Verification](#verification--four-layers) · [Quick start](#quick-start) · [Commands](#commands) ·
+[Windows app](#windows-app) · [Security](#security-posture) · [Limits](#limits--non-goals) ·
+[Layout](#repository-layout) · [Türkçe](#türkçe)
 
 ---
 
-## Why
-
-~250.000 aday her dönem 30 tercih doldurur. Karar için gereken üç bilgi — *bu kadroya yazabilir miyim*,
-*geçen dönem kaçla kapandı*, *bu dönem ne olur* — üç ayrı PDF'te dağınık durur ve hiçbiri
-"ne kadar yanılabileceğini" söylemez. Bu proje üçünü tek ekranda birleştirir ve **hatasını yayımlar**.
-
-## What it does
-
-| # | Yetenek | Nasıl |
-|---|---|---|
-| 01 | Dönem anlık görüntüsü | Her dönemin resmî sonuç belgesi indirilir, hash'lenir, değişmez JSON olarak saklanır |
-| 02 | Yazılabilirlik grafiği | Kılavuzun nitelik kodlarından **mezuniyet programı → yazılabilir kadro** eşlemesi |
-| 03 | Tahmini kapanış puanı | Üç çapalı geçmiş modeli + ölçülmüş σ aralığı; hata payı `/metodoloji` sayfasında |
-| 04 | Tercih listesi | 30 slotlu liste kurucu, risk bantları, paylaşılabilir bağlantı, PWA |
-
-Sertifika, ehliyet veya "Bakınız Başvurma Özel Şartları" içeren nitelik kodları **sessizce geçmez**;
-satır "kontrol et" etiketiyle gösterilir (2026/1'de 1.106 satırın 649'u, %58,7).
-
-## Look
+## Screens
 
 | Landing | Preference builder |
 |---|---|
@@ -38,14 +33,27 @@ satır "kontrol et" etiketiyle gösterilir (2026/1'de 1.106 satırın 649'u, %58
 
 ![Cadre index: unvan and il tables with quota, last-round score range and empty cadres](docs/screenshots/kadrolar.png)
 
-<sub>Screenshots are produced by the browser gate: `npm run smoke && npm run shots:docs`.</sub>
+<sub>Produced by the browser gate: `npm run smoke && npm run shots:docs`.</sub>
 
-## Architecture
+## What it does
+
+| # | Capability | How |
+|---|---|---|
+| 01 | Term snapshot | Each term's official result document is downloaded, hashed and stored as immutable JSON (2025/1, 2025/2, 2026/1 — 4,305 cadre rows) |
+| 02 | Eligibility graph | Guide qualification codes mapped to **graduated programme → cadre you may apply to** |
+| 03 | Predicted closing score | Three-anchor historical model with a measured σ band; the error margin is published on `/metodoloji` |
+| 04 | Preference list | 30-slot builder, risk bands (safe / target / risky / far), shareable link, installable PWA |
+| 05 | Cadre index | A page per unvan (52) and per il (81) with quota, last-round range and cadres left empty |
+
+Qualification codes that hide a certificate, a licence or "see the special conditions" are **never
+skipped silently** — the row is flagged "kontrol et" (2026/1: 649 of 1,106 rows, 58.7 %).
+
+## How it works
 
 ```mermaid
 flowchart LR
   subgraph OSYM["ÖSYM (public documents)"]
-    M[KPSS menü] --> L[round landing page]
+    M[KPSS menu] --> L[round landing page]
     L --> R[result PDFs]
     L --> G[guide PDFs: tables + nitelik]
     L --> S[official summary PDFs]
@@ -66,17 +74,44 @@ flowchart LR
   GA -.blocks publish.-> OUT
 ```
 
-| Stage | Dosya | Çıktı |
+| Stage | File | Output |
 |---|---|---|
 | fetch | `pipeline/run.mjs fetch` | `data/raw/<round>/` (gitignored) + sha256 manifest |
 | parse | `parse-results`, `parse-summary` | `data/rounds/<round>/{lisans,onlisans,ortaogretim,summary}.json` |
-| guide | `parse-guide`, `eligibility` | `guide.json` — program, nitelik sözlüğü, kadro tablosu |
+| guide | `parse-guide`, `eligibility` | `guide.json` — programmes, qualification dictionary, cadre table |
 | measure | `backtest`, `predict` | `backtest.json` (σ, MAE), `predictions.json` |
-| publish | `web/build.mjs` | `dist/` — statik HTML + JSON, çalışma anında dış servis yok |
+| publish | `web/build.mjs` | `dist/` — static HTML + JSON, no runtime service |
+
+## Accuracy — published, not promised
+
+The model is fitted on one past term and tested on the next: rolling origin, 2 term pairs × 3 levels
+= 6 comparisons, 2,878 rows.
+
+| Level | Mean absolute error | Band (σ) | Band hit rate | Rows compared |
+|---|---|---|---|---|
+| Lisans (P3) | **3.94** points | ±7.16 | 47.5 % | 1,523 |
+| Ön lisans (P93) | **5.57** points | ±10.06 | 24.6 % | 971 |
+| Ortaöğretim (P94) | **4.24** points | ±9.03 | 48.4 % | 384 |
+
+The anchor order is a measurement, not a choice: the "same cadre code" anchor (used 14.9 % of the
+time) is off by 8.58 points, while "same unvan + il" (used 80.0 %) is off by 4.48 points.
+
+Field accuracy (cadre table ↔ result documents):
+
+| Field | Match |
+|---|---|
+| il | 99.6–100 % |
+| kontenjan (quota) | 100 % |
+| unvan | 88–100 % |
+| kurum | 30–61 % |
+
+Kurum is low because overflowing cells break institution names in the PDF; the row identity is
+always the cadre code. Independently, all 1,106 rows were re-read with `pdftotext -raw`: **no
+difference** in quota, placed and base-score fields.
 
 ## Data model
 
-Bir kadro satırı, tek doğruluk kaynağı olarak ÖSYM kadro kodunu taşır:
+One cadre row carries the ÖSYM cadre code as its single source of truth:
 
 ```json
 {
@@ -94,77 +129,51 @@ Bir kadro satırı, tek doğruluk kaynağı olarak ÖSYM kadro kodunu taşır:
 }
 ```
 
-`data/raw/<round>/` — indirilen baytlar (gitignore) · `data/rounds/<round>/` — commit'lenmiş anlık
-görüntü · `data/reference/` — küratörlü yedek haritalar (kılavuz belge haritası, il listesi).
+`data/raw/<round>/` — downloaded bytes (gitignored) · `data/rounds/<round>/` — committed snapshot ·
+`data/reference/` — curated fallback maps (guide document map, il list).
 
-## Accuracy — published, not promised
+## Verification — four layers
 
-Tahmin, geçmiş dönemden üretilip sonraki dönemde sınanır: rolling origin, 2 dönem çifti × 3 düzey = 6 karşılaştırma, 2.878 satır.
-
-| Düzey | Ortalama hata (MAE) | Aralık (σ) | Aralık isabeti | Karşılaştırılan |
-|---|---|---|---|---|
-| Lisans (P3) | **3,94** puan | ±7,16 | %47,5 | 1.523 |
-| Ön lisans (P93) | **5,57** puan | ±10,06 | %24,6 | 971 |
-| Ortaöğretim (P94) | **4,24** puan | ±9,03 | %48,4 | 384 |
-
-Çapa sırası tahmin değil, ölçüm sonucudur — "aynı kadro kodu" çapası (%14,9 kullanım) 8,58 puan
-hatayla, "aynı unvan + il" çapası (%80,0 kullanım) 4,48 puan hatayla çalışıyor.
-
-## Verification — four layers, all green
-
-| Katman | Ne ölçer | Komut | Sonuç |
+| Layer | What it measures | Command | Result |
 |---|---|---|---|
-| Unit | parser, gate, eligibility, predictor | `npm test` | 38/38 |
-| Data gates | A resmî toplam · B şema · C dönem farkı · D bağımsız kaynak · E tablo↔sonuç · F alan doğruluğu | `node pipeline/run.mjs gate` | 9/9 · 9/9 · 9/9 · 9/9 · 3/3 · 3/3 |
-| Browser | gerçek sayfa: tablo, süzgeç, liste, paylaşım, XSS, başlıklar | `npm run smoke` | 32/32 |
-| Desktop | paketlenmiş exe: yerel kaynak, gömülü veri, liste kalıcılığı, dış gezinme engeli, yazdırma köprüsü | `npm run desktop:check` | 14/14 |
+| Unit | parsers, gates, eligibility, predictor | `npm test` | 38/38 |
+| Data gates | A official totals · B schema · C term delta · D independent source · E table↔result · F field accuracy | `node pipeline/run.mjs gate` | 9/9 · 9/9 · 9/9 · 9/9 · 3/3 · 3/3 |
+| Browser | the real page: table, filters, list, sharing, XSS, headers | `npm run smoke` | 32/32 |
+| Desktop | the packaged exe: local origin, embedded data, list persistence, blocked external navigation, print bridge | `npm run desktop:check` | 14/14 |
 
-Alan doğruluğu (kadro tablosu ↔ sonuç belgeleri): **il %99,6–100 · kontenjan %100 · unvan %88–100 ·
-kurum %30–61** (PDF'te taşan hücreler kurum metnini bozar; satır kimliği her zaman kadro kodudur).
-
-Veri iddiaları PDF'ten bağımsız çıkarımla da sınanır: `pdftotext -raw` ile 1.106 satırın tamamı
-yeniden okundu, kontenjan / yerleşen / taban puan alanlarında **0 fark**.
-
-## Security posture
-
-- **Sıfır runtime bağımlılığı** — tedarik zinciri yüzeyi yok; `pdftotext` argüman dizisiyle çağrılır, shell yok.
-- `dist/_headers`: CSP (`script-src 'self'`, `frame-ancestors 'none'`, `object-src 'none'`), HSTS,
-  `nosniff`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`, COOP.
-- Paylaşım bağlantısı (`?l=`) yalnız **bilinen kadro kodlarını** kabul eder; `innerHTML`'e giren her
-  değer kaçırılır (DOM XSS kapatıldı, smoke'ta regresyon kapısı var).
-- Inline `<script>` / inline handler / üçüncü taraf istek yok → CSP sıkı kalabiliyor.
-- Kişisel veri sunucuya gitmez: puan ve liste yalnız `localStorage` + URL'de.
+If any gate falls, the site is not published: `npm run gate` chains all three web layers,
+`npm run gate:desktop` adds the desktop build.
 
 ## Quick start
 
 ```bash
-node -v                      # >= 22 gerekir
+node -v                      # 22 or newer
 node pipeline/run.mjs all    # fetch → parse → guide → gate → backtest → predict
-npm run build                # dist/ üret
-node web/serve.mjs 4174      # http://127.0.0.1:4174 önizleme
-npm run gate                 # test + tüm hat + build + tarayıcı kontrolü
+npm run build                # dist/
+node web/serve.mjs 4174      # http://127.0.0.1:4174
+npm run gate                 # tests + full pipeline + build + browser checks
 ```
 
-`npm install` yok — kurulacak paket yok. PDF metni için `pdftotext` gerekir (`PDFTOTEXT_BIN` ile yol
-verilebilir; bu makinede yalnız Git'in MSYS2 ağacında bulunuyor).
+There is no `npm install` — there is nothing to install. PDF text needs `pdftotext`
+(override the path with `PDFTOTEXT_BIN`; on this machine only the copy in Git's MSYS2 tree exists).
 
 ## Commands
 
-| Komut | İş |
+| Command | Does |
 |---|---|
-| `node pipeline/run.mjs fetch [--all] [--only=2026/2]` | belgeleri indir + hash'le |
-| `node pipeline/run.mjs parse` | sonuç PDF → normalize JSON |
-| `node pipeline/run.mjs guide` | kılavuz → nitelik sözlüğü + yazılabilirlik grafiği |
-| `node pipeline/run.mjs gate` | A–F veri kapıları (biri düşerse yayın durur) |
-| `node pipeline/run.mjs backtest` | rolling-origin geri test → σ, MAE |
-| `node pipeline/run.mjs predict` | yeni dönem tahminleri + bantlar |
-| `npm run build` · `npm run smoke` · `npm test` | site · tarayıcı · birim testleri |
-| `npm run shots:docs` | `.shots/` ekran görüntülerini README'ye kopyala |
-| `npm run desktop:build` · `desktop:check` | Windows uygulamasını paketle · kabuk doğrulamasını koş |
+| `node pipeline/run.mjs fetch [--all] [--only=2026/2]` | download and hash the documents |
+| `node pipeline/run.mjs parse` | result PDF → normalised JSON |
+| `node pipeline/run.mjs guide` | guide → qualification dictionary + eligibility graph |
+| `node pipeline/run.mjs gate` | data gates A–F (a failure blocks publishing) |
+| `node pipeline/run.mjs backtest` | rolling-origin backtest → σ, MAE |
+| `node pipeline/run.mjs predict` | predictions for the new term + bands |
+| `npm run build` · `npm run smoke` · `npm test` | site · browser · unit tests |
+| `npm run shots:docs` | copy `.shots/` screenshots into the README |
+| `npm run desktop:build` · `desktop:check` · `gate:desktop` | package the Windows app · run its gate · web gate + both |
 
 ## Windows app
 
-`TercihPusula.exe` — portable, no installer, no network. Serves itself from a 127.0.0.1 listener.
+`TercihPusula.exe` — portable, no installer, no network. It serves itself from a loopback listener.
 
 ```bash
 npm run desktop:build     # dist.zip → icon → dotnet publish → build/desktop + portable zip
@@ -174,42 +183,71 @@ npm run gate:desktop      # web gate + desktop build + desktop check
 
 | | |
 |---|---|
-| Runtime | .NET 11 WinForms + WebView2, single file (~2.2 MB) |
+| Runtime | .NET 11 WinForms + WebView2, single file (2.21 MB) |
 | Content | `dist/` embedded in the exe, extracted to `%LOCALAPPDATA%\TercihPusula\app\<sha8>\` |
-| Origin | `http://127.0.0.1:47821` — loopback-only server, no external listener |
-| Data | 2026/1 snapshot; new round = new exe or a `data-override\` folder next to the exe |
+| Origin | `http://127.0.0.1:47821` — loopback only, nothing reachable from another machine |
+| Data | 2026/1 snapshot; a new term means a new exe or a `data-override\` folder beside the exe |
 | Guards | external navigation blocked, downloads cancelled, permissions denied, devtools off in release |
+| Speed | first paint ~780 ms, 20–292 ms per page |
 
 ![Windows app: the published site inside the packaged shell](docs/screenshots/masaustu.png)
 
-<sub>Produced by launching the packaged exe and capturing its window (`PrintWindow`). No browser chrome, no address bar.</sub>
+<sub>Captured by launching the packaged exe and grabbing its window (`PrintWindow`) — no browser chrome, no address bar.</sub>
 
-The preference list lives in the WebView2 profile, so it survives app updates and follows the
-Windows user, not the folder. Architecture, verification table, troubleshooting and rollback:
-[`docs/desktop-app.md`](docs/desktop-app.md).
+The preference list lives in the WebView2 profile, so it survives app updates and follows the Windows
+user, not the folder. Why the shell serves over loopback instead of WebView2's virtual host (a
+measured ~2 s per request), plus troubleshooting and rollback: [`docs/desktop-app.md`](docs/desktop-app.md).
 
 ## Deploy
 
-Statik çıktı, edge'e hazır: `npx wrangler pages deploy dist --project-name tercihpusula`
-(`dist/_headers` güvenlik başlıklarını taşır). Yayın öncesi kapı: `npm run gate` yeşil olmalı.
+Static output, edge-ready: `npx wrangler pages deploy dist --project-name tercihpusula`
+(`dist/_headers` carries the security headers). `npm run gate` must be green first.
 
-## Launch day — KPSS 2026/2
+The 2026/2 preference window is **17–24 December 2026**; launch-day order is in `RUNBOOK.md` §3–5.
 
-Tercih penceresi **17–24 Aralık 2026**. Kılavuz yayımlandığı gün izlenecek sıra `RUNBOOK.md` §3–5'te:
-`fetch --only=2026/2` → `parse` → `guide` → `gate` → `backtest` → `predict` → `build` → deploy.
+## Security posture
+
+- **Zero runtime dependencies** — no supply-chain surface; `pdftotext` is called with an argument
+  array, never through a shell.
+- `dist/_headers`: CSP (`script-src 'self'`, `frame-ancestors 'none'`, `object-src 'none'`), HSTS,
+  `nosniff`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`, COOP.
+- The share link (`?l=`) accepts **known cadre codes only**; everything reaching the DOM is escaped
+  (DOM XSS closed, with a regression gate in the smoke suite).
+- No inline `<script>`, no inline handlers, no third-party requests — which is what keeps the CSP
+  strict.
+- Personal data never leaves the machine: score and list live in `localStorage` and the URL only.
+- The desktop shell adds: foreign navigation blocked, downloads cancelled, permissions denied,
+  devtools closed in release builds.
 
 ## Limits & non-goals
 
-- Kalabalık simülasyonu (aday havuzu) **yok**; tercih davranışı kayması modele girmez.
-- Kontenjan şoku (1 → 20) yalnız küçük bir düzeltmeyle taşınır.
-- Hesap, giriş, ödeme yok — 2026/2 dönemi ücretsiz.
-- Resmî yerleştirme aracı değildir; hukuki/akademik danışmanlık vermez.
+- No crowd simulation (candidate pool) — preference-behaviour shift is not modelled.
+- Quota shocks (1 → 20) are carried only by a small correction.
+- No accounts, no login, no payments; the 2026/2 term is free.
+- Not an official placement tool; it gives no legal or academic advice.
+
+## Repository layout
+
+```
+pipeline/        fetch → parse → guide → gate → backtest → predict (node, no dependencies)
+  lib/           shared parsing, validation and formatting helpers
+web/             build.mjs (static generator), serve.mjs, smoke.mjs, _headers, assets/
+tests/           38 unit tests (node:test)
+desktop/         .NET 11 WinForms + WebView2 shell for Windows
+scripts/         desktop build/check, icon generator
+data/rounds/     committed immutable snapshots per term
+data/reference/  curated fallback maps
+docs/            desktop-app.md (ops), desktop-app-plan.md (decisions), screenshots
+dist/            generated site (gitignored)
+build/           packaged exe + zip (gitignored)
+```
 
 ## Attribution
 
-Veri ÖSYM'nin kamuya açık belgelerinden türetilmiştir. Çapraz doğrulama için kpssden.com açık veri
-seti (CC BY 4.0) kullanılmıştır: *"KPSSDEN (kpssden.com), ÖSYM verilerinden derlenmiştir."*
-Kod lisansı: TBD.
+Data is derived from ÖSYM's public documents. The kpssden.com open dataset (CC BY 4.0) was used for
+cross-checking: *"KPSSDEN (kpssden.com), ÖSYM verilerinden derlenmiştir."*
+
+Code licence: not chosen yet — the repository is private and not licensed for reuse.
 
 ---
 ---
@@ -221,36 +259,84 @@ Kod lisansı: TBD.
 yanıtlar ve **ne kadar yanılabileceğini yayımlar**. ÖSYM ile bağlantılı değildir; bağlayıcı kaynak
 her zaman güncel tercih kılavuzu ve `ais.osym.gov.tr`'dir.
 
+**İçindekiler** · [Görünüm](#görünüm) · [Ne yapar](#ne-yapar) · [Nasıl çalışır](#nasıl-çalışır) ·
+[Doğruluk](#ölçülen-doğruluk) · [Doğrulama](#doğrulama) · [Hızlı başlangıç](#hızlı-başlangıç) ·
+[Komutlar](#komutlar) · [Windows uygulaması](#windows-uygulaması) · [Güvenlik](#güvenlik) ·
+[Sınırlar](#sınırlar)
+
 ## Görünüm
 
 | Açılış | Tercih listesi |
 |---|---|
 | ![Açılış sayfası](docs/screenshots/ana-sayfa.png) | ![Risk bantlı tercih listesi](docs/screenshots/uygulama.png) |
 
+![Kadro dizini: kontenjan, taban puan aralığı ve boş kalan kadrolarla unvan/il sayfaları](docs/screenshots/kadrolar.png)
+
 ## Ne yapar
 
-- **Dönem anlık görüntüsü:** her dönemin resmî sonuç belgesi indirilir, hash'lenir, değişmez JSON olarak saklanır (şu an 2025/1, 2025/2, 2026/1 — 4.305 kadro satırı).
-- **Yazılabilirlik grafiği:** mezun olunan program → nitelik kodu → kadro satırı. Sertifika ve özel şart kodları otomatik geçmez, "kontrol et" ile işaretlenir (2026/1'de satırların %58,7'si).
-- **Tahmini kapanış puanı:** üç çapalı geçmiş modeli, düzey başına ölçülmüş σ aralığıyla; hata payı `/metodoloji` sayfasında açıkça yayımlanır.
-- **Tercih listesi:** 30 slotlu kurucu, risk bantları (garanti / hedef / riskli / uzak), paylaşılabilir bağlantı, PWA.
-- **Kadro dizini:** 52 unvan ve 81 il için ayrı sayfa; kontenjan, taban puan aralığı, geçen dönem boş kalan kadrolar.
+- **Dönem anlık görüntüsü:** her dönemin resmî sonuç belgesi indirilir, hash'lenir, değişmez JSON
+  olarak saklanır (2025/1, 2025/2, 2026/1 — 4.305 kadro satırı).
+- **Yazılabilirlik grafiği:** mezun olunan program → nitelik kodu → kadro satırı. Sertifika ve özel
+  şart kodları sessizce geçmez, "kontrol et" ile işaretlenir (2026/1'de 1.106 satırın 649'u, %58,7).
+- **Tahmini kapanış puanı:** üç çapalı geçmiş modeli, düzey başına ölçülmüş σ aralığıyla; hata payı
+  `/metodoloji` sayfasında açıkça yayımlanır.
+- **Tercih listesi:** 30 slotlu kurucu, risk bantları (garanti / hedef / riskli / uzak),
+  paylaşılabilir bağlantı, kurulabilir PWA.
+- **Kadro dizini:** 52 unvan ve 81 il için ayrı sayfa; kontenjan, taban puan aralığı, geçen dönem boş
+  kalan kadrolar.
+
+## Nasıl çalışır
+
+```mermaid
+flowchart LR
+  D[("data/rounds/{dönem}<br/>değişmez JSON")] --> E[eligibility<br/>program → nitelik → kadro]
+  D --> B[backtest<br/>rolling origin → σ]
+  E --> PR[predict<br/>3 çapa + bant]
+  B --> PR
+  PR --> W[build.mjs]
+  W --> OUT[dist/<br/>139 statik sayfa + JSON]
+  D --> GA[A–F kapıları]
+  GA -.yayını durdurur.-> OUT
+```
+
+| Aşama | Dosya | Çıktı |
+|---|---|---|
+| indir | `pipeline/run.mjs fetch` | `data/raw/<dönem>/` (gitignore) + sha256 manifest |
+| ayrıştır | `parse-results`, `parse-summary` | `data/rounds/<dönem>/{lisans,onlisans,ortaogretim,summary}.json` |
+| kılavuz | `parse-guide`, `eligibility` | `guide.json` — programlar, nitelik sözlüğü, kadro tablosu |
+| ölç | `backtest`, `predict` | `backtest.json` (σ, MAE), `predictions.json` |
+| yayımla | `web/build.mjs` | `dist/` — statik HTML + JSON, çalışma anında dış servis yok |
 
 ## Ölçülen doğruluk
 
-| Düzey | Ortalama hata | Aralık | Aralık isabeti |
-|---|---|---|---|
-| Lisans (P3) | 3,94 puan | ±7,16 | %47,5 |
-| Ön lisans (P93) | 5,57 puan | ±10,06 | %24,6 |
-| Ortaöğretim (P94) | 4,24 puan | ±9,03 | %48,4 |
+Model bir dönemde kurulur, sonraki dönemde sınanır: rolling origin, 2 dönem çifti × 3 düzey =
+6 karşılaştırma, 2.878 satır.
 
-Kadro tablosu ↔ sonuç belgesi eşleşmesi: il %99,6–100 · kontenjan %100 · unvan %88–100 · kurum %30–61.
-Tüm 1.106 satır ayrıca `pdftotext -raw` ile bağımsız olarak yeniden okundu: kontenjan, yerleşen ve
-taban puan alanlarında fark yok.
+| Düzey | Ortalama hata | Aralık (σ) | Aralık isabeti | Karşılaştırılan |
+|---|---|---|---|---|
+| Lisans (P3) | 3,94 puan | ±7,16 | %47,5 | 1.523 |
+| Ön lisans (P93) | 5,57 puan | ±10,06 | %24,6 | 971 |
+| Ortaöğretim (P94) | 4,24 puan | ±9,03 | %48,4 | 384 |
+
+Çapa sırası bir tercih değil, ölçüm sonucudur: "aynı kadro kodu" çapası (%14,9 kullanım) 8,58 puan
+hatayla, "aynı unvan + il" çapası (%80,0 kullanım) 4,48 puan hatayla çalışıyor.
+
+Alan doğruluğu (kadro tablosu ↔ sonuç belgeleri): **il %99,6–100 · kontenjan %100 · unvan %88–100 ·
+kurum %30–61**. Kurum düşük çünkü PDF'te taşan hücreler kurum metnini bozuyor; satır kimliği her
+zaman kadro kodudur. Ayrıca 1.106 satırın tamamı `pdftotext -raw` ile bağımsız olarak yeniden
+okundu: kontenjan, yerleşen ve taban puan alanlarında fark yok.
 
 ## Doğrulama
 
-`npm run gate` üç katmanı birlikte koşar: **38 birim testi**, **6 veri kapısı (A–F)**, **32 tarayıcı
-kontrolü**. Kapılardan biri düşerse site yayımlanmaz.
+| Katman | Ne ölçer | Komut | Sonuç |
+|---|---|---|---|
+| Birim | parser, kapı, eligibility, tahmin | `npm test` | 38/38 |
+| Veri kapıları | A resmî toplam · B şema · C dönem farkı · D bağımsız kaynak · E tablo↔sonuç · F alan doğruluğu | `node pipeline/run.mjs gate` | 9/9 · 9/9 · 9/9 · 9/9 · 3/3 · 3/3 |
+| Tarayıcı | gerçek sayfa: tablo, süzgeç, liste, paylaşım, XSS, başlıklar | `npm run smoke` | 32/32 |
+| Masaüstü | paketlenmiş exe: yerel kaynak, gömülü veri, liste kalıcılığı, dış gezinme engeli, yazdırma köprüsü | `npm run desktop:check` | 14/14 |
+
+Kapılardan biri düşerse site yayımlanmaz: `npm run gate` üç web katmanını birlikte koşar,
+`npm run gate:desktop` masaüstü paketini de ekler.
 
 ## Hızlı başlangıç
 
@@ -258,10 +344,25 @@ kontrolü**. Kapılardan biri düşerse site yayımlanmaz.
 node pipeline/run.mjs all    # indir → ayrıştır → kılavuz → kapı → geri test → tahmin
 npm run build                # dist/ (139 statik sayfa)
 node web/serve.mjs 4174      # önizleme
-npm run gate                 # her şey, sırayla
+npm run gate                 # testler + tüm hat + build + tarayıcı kontrolü
 ```
 
-`npm install` yok; kurulacak paket yok. PDF metni için `pdftotext` gerekir (`PDFTOTEXT_BIN` ile yol verilebilir).
+`npm install` yok — kurulacak paket yok. PDF metni için `pdftotext` gerekir (`PDFTOTEXT_BIN` ile yol
+verilebilir).
+
+## Komutlar
+
+| Komut | İş |
+|---|---|
+| `node pipeline/run.mjs fetch [--all] [--only=2026/2]` | belgeleri indir + hash'le |
+| `node pipeline/run.mjs parse` | sonuç PDF → normalize JSON |
+| `node pipeline/run.mjs guide` | kılavuz → nitelik sözlüğü + yazılabilirlik grafiği |
+| `node pipeline/run.mjs gate` | A–F veri kapıları (biri düşerse yayın durur) |
+| `node pipeline/run.mjs backtest` | rolling-origin geri test → σ, MAE |
+| `node pipeline/run.mjs predict` | yeni dönem tahminleri + bantlar |
+| `npm run build` · `npm run smoke` · `npm test` | site · tarayıcı · birim testleri |
+| `npm run shots:docs` | `.shots/` ekran görüntülerini README'ye kopyala |
+| `npm run desktop:build` · `desktop:check` · `gate:desktop` | Windows uygulamasını paketle · kapısını koş · web kapısı + ikisi |
 
 ## Windows uygulaması
 
@@ -275,39 +376,44 @@ npm run gate:desktop      # web kapısı + masaüstü paket + masaüstü kontrol
 
 | | |
 |---|---|
-| Çalışma zamanı | .NET 11 WinForms + WebView2, tek dosya (~2,2 MB) |
+| Çalışma zamanı | .NET 11 WinForms + WebView2, tek dosya (2,21 MB) |
 | İçerik | `dist/` exe içine gömülü, `%LOCALAPPDATA%\TercihPusula\app\<sha8>\` altına çıkarılır |
-| Kaynak | `http://127.0.0.1:47821` — yalnız geri döngü (loopback), dışarıya açık port yok |
+| Kaynak | `http://127.0.0.1:47821` — yalnız geri döngü, başka makineden erişilemez |
 | Veri | 2026/1 anlık görüntüsü; yeni dönem = yeni exe veya exe yanında `data-override\` klasörü |
 | Korumalar | dış gezinme engelli, indirme iptal, izinler reddedilir, sürümde devtools kapalı |
+| Hız | ilk boyama ~780 ms, sayfa başına 20–292 ms |
 
 ![Windows uygulaması: paketlenmiş kabuk içinde yayımlanan site](docs/screenshots/masaustu.png)
 
-<sub>Paketlenmiş exe açılıp penceresi yakalanarak üretildi (`PrintWindow`). Tarayıcı çubuğu, adres satırı yok.</sub>
-
 Tercih listeniz WebView2 profilinde tutulur: uygulama güncellemelerinden etkilenmez, klasöre değil
-Windows kullanıcısına bağlıdır. Mimari, doğrulama tablosu, sorun giderme ve geri dönüş:
+Windows kullanıcısına bağlıdır. Kabuğun neden WebView2 sanal host'u yerine loopback kullandığı
+(istek başına ölçülen ~2 s), sorun giderme ve geri dönüş:
 [`docs/desktop-app.md`](docs/desktop-app.md).
 
 ## Güvenlik
 
-Sıfır runtime bağımlılığı; `dist/_headers` ile CSP, HSTS, `nosniff`, `X-Frame-Options`,
-`Referrer-Policy`, `Permissions-Policy`, COOP. Paylaşım bağlantısı yalnız bilinen kadro kodlarını
-kabul eder, DOM'a giren her değer kaçırılır. Puan ve liste sunucuya gitmez: yalnız tarayıcıda
-(`localStorage`) ve paylaşım URL'inde tutulur.
+Sıfır runtime bağımlılığı — tedarik zinciri yüzeyi yok; `pdftotext` argüman dizisiyle çağrılır, shell
+yok. `dist/_headers` ile CSP (`script-src 'self'`, `frame-ancestors 'none'`, `object-src 'none'`),
+HSTS, `nosniff`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`, COOP. Paylaşım
+bağlantısı (`?l=`) yalnız bilinen kadro kodlarını kabul eder; DOM'a giren her değer kaçırılır (DOM
+XSS kapatıldı, smoke'ta regresyon kapısı var). Inline `<script>`, inline handler ve üçüncü taraf
+istek yok. Puan ve liste sunucuya gitmez: yalnız `localStorage` ve URL'de.
 
 ## Yayın
 
-`npx wrangler pages deploy dist --project-name tercihpusula` — statik çıktı, edge'e hazır.
-KPSS 2026/2 tercih penceresi **17–24 Aralık 2026**; yayın günü adımları `RUNBOOK.md` §3–5'te,
-plan ve ölçüm günlüğü `plani.md` dosyasında.
+`npx wrangler pages deploy dist --project-name tercihpusula` — statik çıktı, edge'e hazır
+(`dist/_headers` güvenlik başlıklarını taşır). Yayın öncesi `npm run gate` yeşil olmalı. KPSS 2026/2
+tercih penceresi **17–24 Aralık 2026**; yayın günü sırası `RUNBOOK.md` §3–5'te, karar ve ölçüm
+günlüğü `plani.md` dosyasında.
 
 ## Sınırlar
 
-Kalabalık (aday havuzu) simülasyonu yok; kontenjan şoku yalnız küçük düzeltmeyle taşınır; hesap/giriş
-yok (2026/2 ücretsiz); resmî yerleştirme aracı değildir.
+Kalabalık (aday havuzu) simülasyonu yok; kontenjan şoku (1 → 20) yalnız küçük bir düzeltmeyle
+taşınır; hesap, giriş ve ödeme yok (2026/2 ücretsiz); resmî yerleştirme aracı değildir, hukuki veya
+akademik danışmanlık vermez.
 
 ## Atıf
 
 Veri ÖSYM'nin kamuya açık belgelerinden türetilmiştir. Çapraz doğrulama için kpssden.com açık veri
 seti (CC BY 4.0) kullanılmıştır: *"KPSSDEN (kpssden.com), ÖSYM verilerinden derlenmiştir."*
+Kod lisansı henüz seçilmedi; depo özeldir ve yeniden kullanım için lisanslanmamıştır.
