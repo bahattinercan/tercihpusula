@@ -57,7 +57,25 @@ Tek komut: `npm run gate` (test + tüm hat + build + smoke).
 
 Kapı düşerse **veri yayımlanmaz**; `data/rounds/<dönem>` commit edilmez.
 
-## 5. Yayına alma (Cloudflare Pages)
+## 5. Yayına alma
+
+İki hedef var, ikisi de aynı `dist/` çıktısını kullanır.
+
+**GitHub Pages (şu an canlı):** `master`'a push yeterli — `.github/workflows/pages.yml` build alır,
+`npm test` koşar ve yayınlar: https://bahattinercan.github.io/tercihpusula/
+
+```bash
+git push origin master
+gh run watch $(gh run list --limit 1 --json databaseId --jq '.[0].databaseId') --exit-status
+```
+
+- Proje sitesi `/tercihpusula/` altından servis edildiği için workflow build'i `TP_BASE` ile üretir;
+  yerelde aynı çıktıyı denemek için: `MSYS_NO_PATHCONV=1 TP_BASE=/tercihpusula node web/build.mjs`
+  ve duman testi `MSYS_NO_PATHCONV=1 TP_SMOKE_BASE=/tercihpusula npm run smoke`.
+- GitHub Pages `dist/_headers` dosyasını okumaz; CSP `TP_META_CSP=1` ile `<meta>` olarak gömülür
+  (`frame-ancestors` meta ile ifade edilemez, o direktif platform işi olarak kalır).
+
+**Cloudflare Pages (kök alan adı):**
 
 ```bash
 npx wrangler pages deploy dist --project-name tercihpusula
