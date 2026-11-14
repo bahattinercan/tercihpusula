@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net11.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWindowsForms>true</UseWindowsForms>
+    <RootNamespace>TercihPusula.Desktop</RootNamespace>
+    <AssemblyName>TercihPusula</AssemblyName>
+    <AssemblyTitle>Tercih Pusulası</AssemblyTitle>
+    <Product>Tercih Pusulası</Product>
+    <Description>KPSS tercih karar desteği — yerel Windows uygulaması</Description>
+    <Company>tercihpusula.com</Company>
+    <Version>0.2.0</Version>
+    <FileVersion>0.2.0.0</FileVersion>
+    <ApplicationIcon>Resources\app.ico</ApplicationIcon>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained Condition="'$(SelfContained)' == ''">false</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <EnableCompressionInSingleFile Condition="'$(SelfContained)' == 'true'">true</EnableCompressionInSingleFile>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <!-- WebView2 ships a WPF assembly next to the WinForms one; the unused reference
+         produces MSB3277 on every build without affecting the output. -->
+    <MSBuildWarningsAsMessages>$(MSBuildWarningsAsMessages);MSB3277</MSBuildWarningsAsMessages>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4314.35" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- dist.zip is produced by scripts/desktop-build.mjs; the "dist" argument is the dev escape hatch. -->
+    <EmbeddedResource Include="Resources\dist.zip" LogicalName="dist.zip" Condition="Exists('Resources\dist.zip')" />
+  </ItemGroup>
+
+</Project>

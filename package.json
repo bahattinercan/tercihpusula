@@ -18,6 +18,10 @@
     "predict": "node pipeline/run.mjs predict",
     "build": "node web/build.mjs",
     "smoke": "node web/smoke.mjs",
-    "shots:docs": "node -e \"const{cpSync,mkdirSync}=require('node:fs');mkdirSync('docs/screenshots',{recursive:true});for(const n of ['ana-sayfa','uygulama','kadrolar'])cpSync('.shots/'+n+'.png','docs/screenshots/'+n+'.png');console.log('docs/screenshots güncellendi')\""
+    "shots:docs": "node -e \"const{cpSync,mkdirSync}=require('node:fs');mkdirSync('docs/screenshots',{recursive:true});for(const n of ['ana-sayfa','uygulama','kadrolar'])cpSync('.shots/'+n+'.png','docs/screenshots/'+n+'.png');console.log('docs/screenshots güncellendi')\"",
+    "desktop:icon": "node scripts/make-icon.mjs",
+    "desktop:build": "node scripts/desktop-build.mjs",
+    "desktop:check": "node scripts/desktop-check.mjs",
+    "gate:desktop": "npm run gate && npm run desktop:build && npm run desktop:check"
   }
 }

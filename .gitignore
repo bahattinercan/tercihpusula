@@ -3,3 +3,7 @@ data/raw/
 dist/
 .shots/
 .tmp/
+desktop/bin/
+desktop/obj/
+desktop/Resources/dist.zip
+build/
