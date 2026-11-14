@@ -11,13 +11,19 @@ three on one screen and publishes its own error rate.
 [![Runtime dependencies](https://img.shields.io/badge/runtime%20dependencies-0-1a5fd0?style=flat-square)](package.json)
 [![Static pages](https://img.shields.io/badge/static%20pages-139-1a5fd0?style=flat-square)](web/build.mjs)
 [![Tests](https://img.shields.io/badge/unit%20tests-38%2F38-3c873a?style=flat-square)](tests)
-[![Desktop](https://img.shields.io/badge/windows%20app-2.2%20MB-0078d4?style=flat-square)](docs/desktop-app.md)
+[![Desktop](https://img.shields.io/badge/windows%20app-download%20%C2%B7%201.3%20MB-2ea44f?style=flat-square)](https://github.com/bahattinercan/tercihpusula/releases/latest)
 
 > **Not an official source.** The binding documents are the ÖSYM guide for the term and
 > [ais.osym.gov.tr](https://ais.osym.gov.tr). Predictions come from past placements and guarantee
 > nothing. This project is not affiliated with ÖSYM.
 
-**Contents** · [Screens](#screens) · [What it does](#what-it-does) · [How it works](#how-it-works) ·
+### Download for Windows
+
+**[TercihPusula-win-x64-2026-1.zip](https://github.com/bahattinercan/tercihpusula/releases/latest)**
+· 1.31 MB · unzip, double-click `TercihPusula.exe`. No installer, no registry, no admin rights, no
+network.
+
+**Contents** · [Download](#download-for-windows) · [Screens](#screens) · [What it does](#what-it-does) · [How it works](#how-it-works) ·
 [Accuracy](#accuracy--published-not-promised) · [Data model](#data-model) ·
 [Verification](#verification--four-layers) · [Quick start](#quick-start) · [Commands](#commands) ·
 [Windows app](#windows-app) · [Security](#security-posture) · [Limits](#limits--non-goals) ·
@@ -173,6 +179,19 @@ There is no `npm install` — there is nothing to install. PDF text needs `pdfto
 
 ## Windows app
 
+**[Download the latest release](https://github.com/bahattinercan/tercihpusula/releases/latest)** —
+`TercihPusula-win-x64-2026-1.zip`
+
+| | |
+|---|---|
+| File | `TercihPusula-win-x64-2026-1.zip` — 1.31 MB (contains `TercihPusula.exe`, 2.21 MB, plus a README.txt) |
+| Install | none: unzip anywhere (a path with spaces or Turkish characters is fine) and run the exe |
+| Requires | Windows 10/11 x64 + WebView2 Runtime (preinstalled on Windows 11) |
+| Data | 2026/1 term — 1,106 cadre rows, 139 pages |
+| sha256 | `a9b63ea9287d23be6c4ae0b45fba0ddc423e542a4d0528a776ad7b6d0daa2e9f` |
+| Signature | **unsigned** — Smart App Control may block the first launch; choose "Run anyway" |
+| Version | 0.2.0 ([all releases](https://github.com/bahattinercan/tercihpusula/releases)) |
+
 `TercihPusula.exe` — portable, no installer, no network. It serves itself from a loopback listener.
 
 ```bash
@@ -259,7 +278,13 @@ Code licence: not chosen yet — the repository is private and not licensed for 
 yanıtlar ve **ne kadar yanılabileceğini yayımlar**. ÖSYM ile bağlantılı değildir; bağlayıcı kaynak
 her zaman güncel tercih kılavuzu ve `ais.osym.gov.tr`'dir.
 
-**İçindekiler** · [Görünüm](#görünüm) · [Ne yapar](#ne-yapar) · [Nasıl çalışır](#nasıl-çalışır) ·
+### Windows için indir
+
+**[TercihPusula-win-x64-2026-1.zip](https://github.com/bahattinercan/tercihpusula/releases/latest)**
+· 1,31 MB · zip'i açın, `TercihPusula.exe`'ye çift tıklayın. Kurulum yok, kayıt defteri yok,
+yönetici hakkı yok, ağ yok.
+
+**İçindekiler** · [İndir](#windows-için-indir) · [Görünüm](#görünüm) · [Ne yapar](#ne-yapar) · [Nasıl çalışır](#nasıl-çalışır) ·
 [Doğruluk](#ölçülen-doğruluk) · [Doğrulama](#doğrulama) · [Hızlı başlangıç](#hızlı-başlangıç) ·
 [Komutlar](#komutlar) · [Windows uygulaması](#windows-uygulaması) · [Güvenlik](#güvenlik) ·
 [Sınırlar](#sınırlar)
@@ -365,6 +390,19 @@ verilebilir).
 | `npm run desktop:build` · `desktop:check` · `gate:desktop` | Windows uygulamasını paketle · kapısını koş · web kapısı + ikisi |
 
 ## Windows uygulaması
+
+**[Son sürümü indir](https://github.com/bahattinercan/tercihpusula/releases/latest)** —
+`TercihPusula-win-x64-2026-1.zip`
+
+| | |
+|---|---|
+| Dosya | `TercihPusula-win-x64-2026-1.zip` — 1,31 MB (içinde `TercihPusula.exe` 2,21 MB + README.txt) |
+| Kurulum | yok: zip'i herhangi bir klasöre açın (boşluklu veya Türkçe karakterli yol sorun değil), exe'yi çalıştırın |
+| Gereksinim | Windows 10/11 x64 + WebView2 Runtime (Windows 11'de kurulu gelir) |
+| Veri | 2026/1 dönemi — 1.106 kadro satırı, 139 sayfa |
+| sha256 | `a9b63ea9287d23be6c4ae0b45fba0ddc423e542a4d0528a776ad7b6d0daa2e9f` |
+| İmza | **imzasız** — Smart App Control ilk açılışı engelleyebilir; "Yine de çalıştır" seçin |
+| Sürüm | 0.2.0 ([tüm sürümler](https://github.com/bahattinercan/tercihpusula/releases)) |
 
 `TercihPusula.exe` — taşınabilir, kurulum yok, ağ yok. İçeriği 127.0.0.1 dinleyicisinden sunar.
 
