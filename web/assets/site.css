@@ -266,6 +266,17 @@ td.num.dim { color: var(--ink-soft); }
 td .sub { color: var(--ink-soft); font-size: 12px; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 td strong { font-weight: 600; }
 
+/* geçmiş dönem: hücredeki dönem etiketi + açılan döküm satırı */
+.more { font: 400 11px/1.2 var(--font-mono); color: var(--ink-soft); }
+.term { font-size: 11px; color: var(--ink-soft); border: 1px solid var(--line); border-radius: var(--radius); padding: 0 4px; margin-inline-start: 4px; }
+td.row-actions { white-space: nowrap; }
+td.row-actions .ghost.small + .ghost.small { margin-inline-start: 4px; }
+tr.histo > td { background: var(--surface-2); padding: 10px 12px; }
+table.mini { width: 100%; font-size: 12px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+table.mini th, table.mini td { padding: 4px 8px; border-block-end: 1px solid var(--line); }
+table.mini tbody tr:last-child td { border-block-end: 0; }
+table.mini tbody tr:hover { transform: none; background: transparent; }
+
 /* durum: LED + etiket (+ satırdaki eşik değeri) */
 .chip {
   display: inline-flex; align-items: center; gap: 5px;

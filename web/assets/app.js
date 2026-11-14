@@ -2,6 +2,10 @@
 // Veri /data/<seviye>.json içinde; 555 satırlık en büyük liste tarayıcıda rahat.
 import { foldTr } from './fold.js';
 
+// Geçmiş dönem dökümü (build: pipeline/lib/past-terms.mjs). Aynı kural burada da geçerli:
+// en az bir dönemde kontenjanı dolmuş satır "dolan" sayılır.
+const filledInPast = (entries) => Array.isArray(entries) && entries.some((entry) => (entry.yer ?? 0) > 0);
+
 const MAX_TERCIH = 30;
 // 2025/2 lisans 990 satır: tavan tüm dönemleri kapsar, hiçbir satır gizlenmez
 const MAX_ROWS = 1200;
@@ -31,6 +35,8 @@ const state = {
   kurum: '',
   onlyWritable: true,
   onlyEmpty: false,
+  onlyFilled: false,
+  expanded: new Set(),
   query: '',
   list: [],
   data: null,
@@ -91,6 +97,7 @@ function filteredRows() {
   return state.data.rows.filter((row) => {
     if (state.onlyWritable && !isWritable(row)) return false;
     if (state.onlyEmpty && !row.bos) return false;
+    if (state.onlyFilled && !filledInPast(row.gecmis)) return false;
     if (state.il && row.il !== state.il) return false;
     if (state.unvan && row.unvan !== state.unvan) return false;
     if (state.kurum && row.kurum !== state.kurum) return false;
@@ -110,6 +117,33 @@ function fmt(value) {
   return value === null || value === undefined ? '—' : value.toFixed(3).replace('.', ',');
 }
 
+const MATCH_LABEL = { kod: 'aynı kadro kodu', grup: 'aynı kurum/unvan' };
+const pair = (entry) => (entry.taban === null || entry.taban === undefined ? 'boş kaldı' : `${fmt(entry.taban)}–${fmt(entry.tavan)}`);
+
+// Geçmiş dönem hücresi: en yeni dönemin taban–tavan çifti + dönem etiketi.
+// Tüm dönemler `title` içinde; tıklanabilir döküm satırı ayrı düğmede.
+function historyCell(history) {
+  if (!history?.length) return '<td class="num dim">—</td>';
+  const latest = history[0];
+  const title = history.map((entry) => `${entry.d} (${MATCH_LABEL[entry.es] ?? entry.es}): ${pair(entry)}`).join(' · ');
+  const more = history.length > 1 ? ` <span class="more">+${history.length - 1}</span>` : '';
+  return `<td class="num dim" title="${esc(title)}">${pair(latest)} <span class="term">${esc(latest.d)}</span>${more}</td>`;
+}
+
+function historyRow(row, history) {
+  const cells = history
+    .map(
+      (entry) => `<tr><td>${esc(entry.d)}</td><td class="sub">${esc(MATCH_LABEL[entry.es] ?? entry.es)}</td>` +
+        `<td class="num">${entry.knt ?? '—'}</td><td class="num">${entry.yer ?? 0}</td>` +
+        `<td class="num">${fmt(entry.taban)}</td><td class="num">${fmt(entry.tavan)}</td>` +
+        `<td class="num">${entry.knt === null || entry.knt === undefined ? '—' : (entry.knt - (entry.yer ?? 0))}</td></tr>`,
+    )
+    .join('');
+  return `<tr class="histo"><td colspan="7">
+    <table class="mini"><thead><tr><th>dönem</th><th>eşleşme</th><th class="num">kont.</th><th class="num">yerleşen</th><th class="num">taban</th><th class="num">tavan</th><th class="num">boş</th></tr></thead>
+    <tbody>${cells}</tbody></table></td></tr>`;
+}
+
 function renderTable() {
   const sigma = state.data.sigma ?? 6;
   const rows = filteredRows();
@@ -121,6 +155,8 @@ function renderTable() {
     const meta = BANDS[band];
     const manual = manualCodes(row);
     const inList = state.list.includes(row.kod);
+    const history = row.gecmis ?? [];
+    const open = state.expanded.has(row.kod) && history.length > 0;
     tr.innerHTML = `
       <td>
         <strong>${esc(row.unvan ?? '—')}</strong>
@@ -128,13 +164,22 @@ function renderTable() {
       </td>
       <td class="num">${row.knt ?? '—'}</td>
       <td class="num dim">${fmt(row.taban)}</td>
+      ${historyCell(history)}
       <td class="num">${fmt(row.tahmin?.puan)}</td>
       <td><span class="chip ${band}" title="çapa: ${esc(row.tahmin?.source ?? 'yok')}">${meta.label}</span>
         ${row.bos ? '<span class="chip">boş kaldı</span>' : ''}
         ${manual.length ? '<span class="chip manual" title="Bu satırda sertifika/özel şart var">kontrol et</span>' : ''}
       </td>
-      <td><button class="ghost small" data-add="${row.kod}" ${inList || state.list.length >= MAX_TERCIH ? 'disabled' : ''}>${inList ? 'listede' : 'ekle'}</button></td>`;
+      <td class="row-actions">
+        <button class="ghost small" data-add="${row.kod}" ${inList || state.list.length >= MAX_TERCIH ? 'disabled' : ''}>${inList ? 'listede' : 'ekle'}</button>
+        ${history.length ? `<button class="ghost small" data-histo="${row.kod}" aria-expanded="${open}" title="Geçmiş dönem dökümü">döküm</button>` : ''}
+      </td>`;
     frag.append(tr);
+    if (open) {
+      const sub = document.createElement('tbody');
+      sub.innerHTML = historyRow(row, history);
+      frag.append(...sub.children);
+    }
   }
   body.replaceChildren(frag);
   $('#count').textContent = `${rows.length} satır${rows.length > MAX_ROWS ? ` (ilk ${MAX_ROWS} gösteriliyor, filtreyi daraltın)` : ''}`;
@@ -225,10 +270,12 @@ function clearFilters() {
   state.kurum = '';
   state.onlyWritable = false;
   state.onlyEmpty = false;
+  state.onlyFilled = false;
   $('#query').value = '';
   for (const id of ['#il', '#unvan', '#kurum']) $(id).value = '';
   $('#onlyWritable').checked = false;
   $('#onlyEmpty').checked = false;
+  $('#onlyFilled').checked = false;
   renderTable();
 }
 
@@ -257,6 +304,7 @@ function activeFilterLine() {
   if (state.programKod) parts.push('program seçili');
   if (state.onlyWritable) parts.push('sadece yazabileceklerim');
   if (state.onlyEmpty) parts.push('boş kalanlar');
+  if (state.onlyFilled) parts.push('geçmiş dönemde dolanlar');
   return parts;
 }
 
@@ -412,6 +460,10 @@ function bind() {
     state.onlyEmpty = event.target.checked;
     renderTable();
   });
+  $('#onlyFilled').addEventListener('change', (event) => {
+    state.onlyFilled = event.target.checked;
+    renderTable();
+  });
   $('#query').addEventListener('input', (event) => {
     state.query = event.target.value;
     renderTable();
@@ -449,6 +501,14 @@ function bind() {
       applyProgramme();
       renderTable();
       syncUrl();
+      return;
+    }
+    const histo = event.target.closest('[data-histo]');
+    if (histo) {
+      const kod = histo.dataset.histo;
+      if (state.expanded.has(kod)) state.expanded.delete(kod);
+      else state.expanded.add(kod);
+      renderTable();
       return;
     }
     const add = event.target.closest('[data-add]');

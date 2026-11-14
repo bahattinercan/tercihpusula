@@ -310,6 +310,61 @@ async function main() {
     );
     await clearAllFilters();
 
+    // --- geçmiş dönem dökümü: "geçmiş dönemde dolanlar" + taban–tavan hücresi + döküm satırı
+    const baseline = await visibleRows();
+    const filterState = await evaluate(
+      client,
+      "(() => { const c = document.querySelector('#onlyFilled'); return c ? JSON.stringify({ exists: true, checked: c.checked }) : JSON.stringify({ exists: false }); })()",
+    );
+    const parsedFilter = JSON.parse(filterState);
+    check('“geçmiş dönemde dolanlar” var ve varsayılan kapalı', parsedFilter.exists === true && parsedFilter.checked === false, filterState);
+
+    const toggleFilled = (on) =>
+      evaluate(
+        client,
+        `(() => { const c = document.querySelector('#onlyFilled'); c.checked = ${on}; c.dispatchEvent(new Event('change')); })()`,
+      );
+    await toggleFilled(true);
+    await sleep(150);
+    const filledRows = await visibleRows();
+    check(
+      'geçmiş filtresi yalnız geçmişte dolan kadroları bırakıyor',
+      filledRows > 0 && filledRows < baseline,
+      `${baseline} → ${filledRows} satır`,
+    );
+
+    const historyPair = await evaluate(
+      client,
+      "(() => { const cell = [...document.querySelectorAll('#rows tr td[title]')].find((td) => td.title.includes('aynı') && /\\d/.test(td.textContent)); return cell ? cell.textContent.replace(/\\s+/g, ' ').trim() : ''; })()",
+    );
+    check(
+      'satırda geçmiş taban–tavan çifti görünüyor',
+      /\d+,\d+–\d+,\d+/.test(historyPair) && /\d{4}\/\d/.test(historyPair),
+      historyPair.slice(0, 60) || 'hücre boş',
+    );
+
+    await evaluate(client, "(() => { document.querySelector('[data-histo]').click(); })()");
+    await sleep(150);
+    const drill = await evaluate(
+      client,
+      "JSON.stringify({ open: document.querySelectorAll('#rows tr.histo').length, lines: document.querySelectorAll('#rows tr.histo table.mini tbody tr').length, expanded: document.querySelectorAll('[data-histo][aria-expanded=\"true\"]').length, hasScore: /\\d+,\\d+/.test(document.querySelector('#rows tr.histo')?.textContent ?? '') })",
+    );
+    const parsedDrill = JSON.parse(drill);
+    check(
+      '“döküm” satırı dönem başına taban/tavan açıyor',
+      parsedDrill.open === 1 && parsedDrill.lines >= 1 && parsedDrill.expanded === 1 && parsedDrill.hasScore === true,
+      drill,
+    );
+    await evaluate(client, "(() => { document.querySelector('[data-histo][aria-expanded=\"true\"]').click(); })()");
+    await sleep(150);
+    const collapsed = await evaluate(client, "document.querySelectorAll('#rows tr.histo').length");
+    check('döküm ikinci tıklamada kapanıyor', collapsed === 0, `${collapsed} döküm satırı`);
+
+    await toggleFilled(false);
+    await sleep(150);
+    const restored = await visibleRows();
+    check('geçmiş filtresi kaldırılınca satırlar geri geliyor', restored === baseline, `${filledRows} → ${restored}`);
+
     const overflow = await evaluate(
       client,
       "(() => { const d = document.documentElement; return d.scrollWidth - d.clientWidth; })()",

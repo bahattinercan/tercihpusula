@@ -8,6 +8,7 @@ import { createHash } from 'node:crypto';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildSearchHints } from '../pipeline/lib/search-hints.mjs';
+import { buildPastTerms } from '../pipeline/lib/past-terms.mjs';
 
 const WEB = dirname(fileURLToPath(import.meta.url));
 const ROOT = dirname(WEB);
@@ -106,7 +107,7 @@ function latestRound() {
   return { key, round: key.replace('-', '/') };
 }
 
-function buildLevelData(key, level, guide, predictions, sigma, previousByKod) {
+function buildLevelData(key, level, guide, predictions, sigma, previousByKod, pastRounds = []) {
   const results = existsSync(join(ROUNDS, key, `${level}.json`)) ? readJson(join(ROUNDS, key, `${level}.json`)).rows : [];
   const levelGuide = guide.levels[level];
   if (!levelGuide) return null;
@@ -142,6 +143,14 @@ function buildLevelData(key, level, guide, predictions, sigma, previousByKod) {
       kaynak: result ? 'sonuc' : previous ? 'gecmis' : 'tablo',
     };
   });
+
+  // Geçmiş dönem dökümü (taban/tavan + doldu mu): kod eşleşmesi, tutmazsa kurum+il+unvan.
+  // Alan yalnız geçmişi olan satırlara eklenir, veri hacmi boşuna büyümez.
+  const pastTerms = buildPastTerms({ current: rows, previous: pastRounds });
+  for (const row of rows) {
+    const history = pastTerms.get(row.kod);
+    if (history) row.gecmis = history;
+  }
 
   return {
     round: key.replace('-', '/'),
@@ -217,19 +226,25 @@ function main() {
 
   const olderKeys = readdirSync(ROUNDS).filter((entry) => /^\d{4}-\d$/.test(entry) && entry < key).sort();
   const previousByLevel = {};
+  // Geçmiş dönem dökümü için: dönem bazlı, en yeni önce (buildPastTerms sırayı korur).
+  const pastByLevel = {};
   for (const level of LEVELS) {
     const map = new Map();
+    const past = [];
     for (const older of olderKeys) {
       const file = join(ROUNDS, older, `${level}.json`);
       if (!existsSync(file)) continue;
-      for (const row of readJson(file).rows) map.set(row.kod, row);
+      const olderRows = readJson(file).rows;
+      for (const row of olderRows) map.set(row.kod, row);
+      past.push({ period: older, rows: olderRows });
     }
     previousByLevel[level] = map;
+    pastByLevel[level] = past;
   }
 
   const levels = {};
   for (const level of LEVELS) {
-    const data = buildLevelData(key, level, guide, predictions, sigmaByLevel[level] ?? 6, previousByLevel[level]);
+    const data = buildLevelData(key, level, guide, predictions, sigmaByLevel[level] ?? 6, previousByLevel[level], pastByLevel[level]);
     if (!data) continue;
     levels[level] = data;
     writeFileSync(join(DIST, 'data', `${level}.json`), JSON.stringify(data));
@@ -338,6 +353,7 @@ function main() {
 <div class="toolbar">
   <label><input type="checkbox" id="onlyWritable" checked> sadece yazabileceklerim</label>
   <label><input type="checkbox" id="onlyEmpty"> geçen dönem boş kalanlar</label>
+  <label title="En az bir geçmiş dönemde kontenjanı dolan kadrolar"><input type="checkbox" id="onlyFilled"> geçmiş dönemde dolanlar</label>
   <input id="query" type="search" placeholder="kurum, unvan, il veya kadro kodu ara" style="max-width:20rem">
   <span class="count" id="count"></span>
 </div>
@@ -345,7 +361,7 @@ function main() {
   <div class="stack">
     <div class="table-wrap">
       <table>
-        <thead><tr><th>kadro</th><th class="num">kont.</th><th class="num">geçen taban</th><th class="num">tahmin</th><th>durum</th><th></th></tr></thead>
+        <thead><tr><th>kadro</th><th class="num">kont.</th><th class="num">geçen taban</th><th class="num">önceki dönemler</th><th class="num">tahmin</th><th>durum</th><th></th></tr></thead>
         <tbody id="rows"></tbody>
       </table>
     </div>

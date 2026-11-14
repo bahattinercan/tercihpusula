@@ -151,9 +151,9 @@ One cadre row carries the ÖSYM cadre code as its single source of truth:
 
 | Layer | What it measures | Command | Result |
 |---|---|---|---|
-| Unit | parsers, gates, eligibility, predictor, Turkish folding, empty-state index | `npm test` | 45/45 |
+| Unit | parsers, gates, eligibility, predictor, Turkish folding, empty-state index, past-term history | `npm test` | 49/49 |
 | Data gates | A official totals · B schema · C term delta · D independent source · E table↔result · F field accuracy | `node pipeline/run.mjs gate` | 9/9 · 9/9 · 9/9 · 9/9 · 3/3 · 3/3 |
-| Browser | the real page: table, filters, list, sharing, XSS, headers, promo page, accent-free search | `npm run smoke` | 44/44 |
+| Browser | the real page: table, filters, list, sharing, XSS, headers, promo page, accent-free search, past-term drill-down | `npm run smoke` | 50/50 |
 | Desktop | the packaged exe: local origin, embedded data, list persistence, blocked external navigation, print bridge | `npm run desktop:check` | 14/14 |
 
 If any gate falls, the site is not published: `npm run gate` chains all three web layers,
@@ -265,7 +265,7 @@ launch-day order is in `RUNBOOK.md` §3–5.
 pipeline/        fetch → parse → guide → gate → backtest → predict (node, no dependencies)
   lib/           shared parsing, validation and formatting helpers
 web/             build.mjs (static generator), serve.mjs, smoke.mjs, _headers, assets/
-tests/           45 unit tests (node:test)
+tests/           49 unit tests (node:test)
 desktop/         .NET 11 WinForms + WebView2 shell for Windows
 scripts/         desktop build/check, icon generator
 data/rounds/     committed immutable snapshots per term
@@ -378,9 +378,9 @@ okundu: kontenjan, yerleşen ve taban puan alanlarında fark yok.
 
 | Katman | Ne ölçer | Komut | Sonuç |
 |---|---|---|---|
-| Birim | parser, kapı, eligibility, tahmin, Türkçe katlama, boş-sonuç indeksi | `npm test` | 45/45 |
+| Birim | parser, kapı, eligibility, tahmin, Türkçe katlama, boş-sonuç indeksi, geçmiş dönem dökümü | `npm test` | 49/49 |
 | Veri kapıları | A resmî toplam · B şema · C dönem farkı · D bağımsız kaynak · E tablo↔sonuç · F alan doğruluğu | `node pipeline/run.mjs gate` | 9/9 · 9/9 · 9/9 · 9/9 · 3/3 · 3/3 |
-| Tarayıcı | gerçek sayfa: tablo, süzgeç, liste, paylaşım, XSS, başlıklar, tanıtım sayfası, aksansız arama | `npm run smoke` | 44/44 |
+| Tarayıcı | gerçek sayfa: tablo, süzgeç, liste, paylaşım, XSS, başlıklar, tanıtım sayfası, aksansız arama, geçmiş dönem dökümü | `npm run smoke` | 50/50 |
 | Masaüstü | paketlenmiş exe: yerel kaynak, gömülü veri, liste kalıcılığı, dış gezinme engeli, yazdırma köprüsü | `npm run desktop:check` | 14/14 |
 
 Kapılardan biri düşerse site yayımlanmaz: `npm run gate` üç web katmanını birlikte koşar,
