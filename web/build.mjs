@@ -18,6 +18,14 @@ const APP_VERSION = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8'))
 // verecekse TP_DOWNLOAD_URL ile (ör. /indir/TercihPusula-win-x64-2026-1.zip) ezilir.
 const RELEASE_URL = 'https://github.com/bahattinercan/tercihpusula/releases/latest';
 const DOWNLOAD_URL = process.env.TP_DOWNLOAD_URL || RELEASE_URL;
+// Yayın hedefi: varsayılan kendi alan adı. GitHub Pages proje sitesi gibi bir alt yol
+// altında yayınlanacaksa TP_BASE (ör. /tercihpusula) ile kökten mutlak yollar kaydırılır.
+const SITE_URL = (process.env.TP_SITE_URL || 'https://tercihpusula.com').replace(/\/$/, '');
+const BASE = (process.env.TP_BASE || '').replace(/\/$/, '');
+// GitHub Pages _headers dosyasını okumaz; aynı politikayı <meta> ile taşımak için.
+const META_CSP = process.env.TP_META_CSP === '1';
+const CSP_META =
+  "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; form-action 'none'; base-uri 'self'; object-src 'none'";
 const LEVELS = ['lisans', 'onlisans', 'ortaogretim'];
 const LEVEL_LABEL = { lisans: 'Lisans (P3)', onlisans: 'Ön lisans (P93)', ortaogretim: 'Ortaöğretim (P94)' };
 const ROUND_DIRS = readdirSync(ROUNDS).filter((name) => /^\d{4}-\d$/.test(name)).sort();
@@ -58,6 +66,7 @@ function layout({ title, description, current, body, round }) {
 <link rel="manifest" href="/manifest.webmanifest">
 <meta name="theme-color" content="#0a0f12" media="(prefers-color-scheme: dark)">
 <meta name="theme-color" content="#eef1f4" media="(prefers-color-scheme: light)">
+${META_CSP ? `<meta http-equiv="Content-Security-Policy" content="${CSP_META}">` : ''}
 </head>
 <body>
 <div class="shell">
@@ -148,6 +157,30 @@ function writePage(path, html) {
   const file = join(DIST, path);
   mkdirSync(dirname(file), { recursive: true });
   writeFileSync(file, html);
+}
+
+// Kök altında yayınlanmayan hedefler için (GitHub Pages proje sitesi: /tercihpusula/)
+// şablonlardaki kökten mutlak yolları tek geçişte kaydırır. Şablonlara base değişkeni
+// serpiştirmek yerine çıktı üzerinde çalışır: tek yer, tek kural.
+function applyBase(dist, base) {
+  const rewrite = (file) => {
+    const ext = file.slice(file.lastIndexOf('.'));
+    const text = readFileSync(file, 'utf8');
+    let next = text;
+    if (ext === '.html') next = text.replaceAll('="/', `="${base}/`);
+    else if (ext === '.css') next = text.replaceAll("url('/", `url('${base}/`);
+    else if (ext === '.js') next = text.replaceAll("'/data/", `'${base}/data/`).replaceAll('`/data/', `\`${base}/data/`);
+    else if (ext === '.webmanifest') next = text.replaceAll('": "/', `": "${base}/`);
+    if (next !== text) writeFileSync(file, next);
+  };
+  const walk = (dir) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const full = join(dir, entry.name);
+      if (entry.isDirectory()) walk(full);
+      else if (/\.(html|css|js|webmanifest)$/.test(entry.name)) rewrite(full);
+    }
+  };
+  walk(dist);
 }
 
 function main() {
@@ -998,9 +1031,11 @@ ${renderRowTable(sorted)}`,
     join(DIST, 'assets', 'favicon.svg'),
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#1a5fd0"/><path d="M32 12 44 32 32 52 20 32Z" fill="#fff"/><circle cx="32" cy="32" r="4" fill="#1a5fd0"/></svg>',
   );
-  const urls = ['/', '/uygulama.html', '/tanitim.html', '/metodoloji.html', '/veri-kaynaklari.html', '/bos-kalan-kadrolar.html', '/kadrolar/', ...unvanLinks.map((l) => l.href), ...ilLinks.map((l) => l.href)];
-  writeFileSync(join(DIST, 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map((u) => `  <url><loc>https://tercihpusula.com${u}</loc></url>`).join('\n')}\n</urlset>\n`);
-  writeFileSync(join(DIST, 'robots.txt'), 'User-agent: *\nAllow: /\nSitemap: https://tercihpusula.com/sitemap.xml\n');
+  const urls = ['/', '/uygulama.html', '/tanitim.html', '/metodoloji.html', '/veri-kaynaklari.html', '/bos-kalan-kadrolar.html', '/kadrolar/', ...unvanLinks.map((l) => l.href), ...ilLinks.map((l) => l.href)];  writeFileSync(join(DIST, 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map((u) => `  <url><loc>${SITE_URL}${BASE}${u}</loc></url>`).join('\n')}\n</urlset>\n`);
+  writeFileSync(join(DIST, 'robots.txt'), `User-agent: *\nAllow: /\nSitemap: ${SITE_URL}${BASE}/sitemap.xml\n`);
+  // GitHub Pages Jekyll'i atlamalıdır (aksi halde _ ile başlayan yollar işlenmez)
+  writeFileSync(join(DIST, '.nojekyll'), '');
+  if (BASE) applyBase(DIST, BASE);
 
   const pages = urls.length;
   process.stderr.write(

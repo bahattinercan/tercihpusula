@@ -1,0 +1,50 @@
+name: pages
+
+# Yayın: master'a her push'ta site üretilir ve GitHub Pages'e yüklenir.
+# Not: site /tercihpusula/ alt yolundan servis edilir, bu yüzden build TP_BASE ile
+# üretiliyor (kökten mutlak yollar kaydırılır) ve CSP _headers yerine <meta> ile taşınıyor.
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Unit tests
+        run: npm test
+      - name: Build site
+        env:
+          TP_BASE: /tercihpusula
+          TP_SITE_URL: https://bahattinercan.github.io/tercihpusula
+          TP_META_CSP: '1'
+        run: node web/build.mjs
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

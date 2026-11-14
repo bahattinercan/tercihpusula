@@ -15,6 +15,9 @@ const DIST = join(dirname(WEB), 'dist');
 // dist dışında: dağıtım klasörüne test çıktısı girmesin
 const SHOTS = join(dirname(WEB), '.shots');
 const PORT = 4173;
+// Build TP_BASE ile üretildiyse aynı ön eki sunucuya da ver (ör. TP_SMOKE_BASE=/tercihpusula)
+const BASE = (process.env.TP_SMOKE_BASE || '').replace(/\/$/, '');
+const ROOT_URL = `http://127.0.0.1:${PORT}${BASE}`;
 const DEBUG_PORT = 9333;
 
 const MIME = {
@@ -37,8 +40,18 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 function serve() {
   const server = createServer(async (req, res) => {
-    const url = new URL(req.url, `http://127.0.0.1:${PORT}`);
-    let path = url.pathname === '/' ? '/index.html' : url.pathname;
+    const url = new URL(req.url, `${ROOT_URL}`);
+    let path = url.pathname;
+    // Build bir ön ek altında üretildiyse isteği o ön ekten soy (Pages proje sitesi).
+    if (BASE) {
+      if (path === BASE) path = '/';
+      else if (path.startsWith(`${BASE}/`)) path = path.slice(BASE.length);
+      else {
+        res.writeHead(404).end('outside base');
+        return;
+      }
+    }
+    if (path === '/') path = '/index.html';
     if (path.endsWith('/')) path += 'index.html';
     const file = join(DIST, path);
     try {
@@ -130,7 +143,7 @@ async function main() {
       '--no-first-run',
       '--disable-gpu',
       '--window-size=1280,1000',
-      `http://127.0.0.1:${PORT}/uygulama.html?seviye=lisans&puan=85&program=3342`,
+      `${ROOT_URL}/uygulama.html?seviye=lisans&puan=85&program=3342`,
     ],
     { stdio: 'ignore' },
   );
@@ -171,7 +184,7 @@ async function main() {
 
     // ilk satırı listeye ekle: temiz URL + boş localStorage (önceki kontroller
     // ?l= ile liste kurmuş olabilir, sıra bağımsızlığı için sıfırlanır)
-    await client.send('Page.navigate', { url: `http://127.0.0.1:${PORT}/uygulama.html?seviye=lisans&puan=85` });
+    await client.send('Page.navigate', { url: `${ROOT_URL}/uygulama.html?seviye=lisans&puan=85` });
     await sleep(600);
     await evaluate(client, "localStorage.clear()");
     await client.send('Page.reload');
@@ -254,7 +267,7 @@ async function main() {
 
     // her seviyede: tabloda görünen kontenjan toplamı = dist/data toplamı = resmî ÖSYM toplamı
     for (const [level, officialKontenjan] of [['lisans', 977], ['onlisans', 828], ['ortaogretim', 278]]) {
-      await client.send('Page.navigate', { url: `http://127.0.0.1:${PORT}/uygulama.html?seviye=${level}&puan=85` });
+      await client.send('Page.navigate', { url: `${ROOT_URL}/uygulama.html?seviye=${level}&puan=85` });
       await sleep(600);
       const sumShown = await evaluate(
         client,
@@ -272,7 +285,7 @@ async function main() {
 
     // boş kalan kadrolar: 3 dönem tablosu + unvan kırılımı
     await client.send('Emulation.clearDeviceMetricsOverride');
-    await client.send('Page.navigate', { url: `http://127.0.0.1:${PORT}/bos-kalan-kadrolar.html` });
+    await client.send('Page.navigate', { url: `${ROOT_URL}/bos-kalan-kadrolar.html` });
     await sleep(500);
     const roundRows = await evaluate(client, "document.querySelectorAll('main table')[0].querySelectorAll('tbody tr').length");
     check('boş kalan: dönem tablosu dolu', roundRows >= 2, `${roundRows} dönem`);
@@ -283,7 +296,7 @@ async function main() {
 
     // kadro dizini: liste + tarayıcı içi süzgeç
     await client.send('Emulation.clearDeviceMetricsOverride');
-    await client.send('Page.navigate', { url: `http://127.0.0.1:${PORT}/kadrolar/` });
+    await client.send('Page.navigate', { url: `${ROOT_URL}/kadrolar/` });
     await sleep(500);
     const unvanRows = await evaluate(client, "document.querySelectorAll('#unvan-rows tr[data-name]').length");
     check('kadro dizini satırları render edildi', unvanRows > 0, `${unvanRows} unvan`);
@@ -302,7 +315,7 @@ async function main() {
     writeFileSync(join(SHOTS, 'kadrolar.png'), Buffer.from(indexListShot.data, 'base64'));
 
     // bir unvan sayfası
-    await client.send('Page.navigate', { url: `http://127.0.0.1:${PORT}/kadrolar/unvan-tekniker.html` });
+    await client.send('Page.navigate', { url: `${ROOT_URL}/kadrolar/unvan-tekniker.html` });
     await sleep(400);
     const unvanPageRows = await evaluate(client, "document.querySelectorAll('main tbody tr').length");
     check('unvan sayfası satırları var', unvanPageRows > 0, `${unvanPageRows} satır`);
@@ -312,7 +325,7 @@ async function main() {
     // güvenlik: paylaşım bağlantısındaki ?l= değeri DOM'a ham yazılmamalı (XSS)
     const xssPayload = `<img src=x onerror="document.title='XSS'">`;
     await client.send('Page.navigate', {
-      url: `http://127.0.0.1:${PORT}/uygulama.html?seviye=lisans&puan=85&l=${encodeURIComponent(xssPayload)}`,
+      url: `${ROOT_URL}/uygulama.html?seviye=lisans&puan=85&l=${encodeURIComponent(xssPayload)}`,
     });
     await sleep(800);
     const xssTitle = await evaluate(client, 'document.title');
@@ -322,7 +335,7 @@ async function main() {
     // meşru paylaşım bağlantısı hâlâ çalışıyor mu (aşırı filtreleme kontrolü)
     const realKods = JSON.parse(readFileSync(join(DIST, 'data', 'lisans.json'), 'utf8')).rows.slice(0, 3).map((r) => r.kod);
     await client.send('Page.navigate', {
-      url: `http://127.0.0.1:${PORT}/uygulama.html?seviye=lisans&puan=85&l=${realKods.join(',')}`,
+      url: `${ROOT_URL}/uygulama.html?seviye=lisans&puan=85&l=${realKods.join(',')}`,
     });
     await sleep(800);
     const sharedItems = await evaluate(client, "document.querySelectorAll('#list li:not(.empty)').length");
@@ -332,7 +345,7 @@ async function main() {
     const ALLOWED_ROOT = new Set([
       'assets', 'data', 'kadrolar', '_headers', 'index.html', 'uygulama.html', 'tanitim.html',
       'metodoloji.html', 'veri-kaynaklari.html', 'bos-kalan-kadrolar.html',
-      '404.html', 'manifest.webmanifest', 'robots.txt', 'sitemap.xml',
+      '404.html', 'manifest.webmanifest', 'robots.txt', 'sitemap.xml', '.nojekyll',
     ]);
     const rootEntries = readdirSync(DIST);
     const stray = rootEntries.filter((name) => !ALLOWED_ROOT.has(name));
@@ -348,7 +361,7 @@ async function main() {
     );
 
     // dizinden gelen derin bağlantı: unvan önceden seçili ve satırlar süzülmüş olmalı
-    await client.send('Page.navigate', { url: `http://127.0.0.1:${PORT}/uygulama.html?unvan=TEKN%C4%B0KER&puan=85` });
+    await client.send('Page.navigate', { url: `${ROOT_URL}/uygulama.html?unvan=TEKN%C4%B0KER&puan=85` });
     await sleep(700);
     const deepRows = await evaluate(client, "document.querySelectorAll('#rows tr').length");
     const deepSelect = await evaluate(client, "document.querySelector('#unvan').value");
@@ -357,7 +370,7 @@ async function main() {
 
     // metodoloji ve kaynak sayfaları: tile şeridi + tablo
     for (const [path, shot] of [['/metodoloji.html', 'metodoloji.png'], ['/veri-kaynaklari.html', 'veri-kaynaklari.png']]) {
-      await client.send('Page.navigate', { url: `http://127.0.0.1:${PORT}${path}` });
+      await client.send('Page.navigate', { url: `${ROOT_URL}${path}` });
       await sleep(400);
       const tiles = await evaluate(client, "document.querySelectorAll('.tiles .tile').length");
       check(`${path}: tile şeridi var`, tiles >= 3, `${tiles} tile`);
@@ -367,14 +380,14 @@ async function main() {
 
     // ana sayfa görüntüsü
     await client.send('Emulation.clearDeviceMetricsOverride');
-    await client.send('Page.navigate', { url: `http://127.0.0.1:${PORT}/` });
+    await client.send('Page.navigate', { url: `${ROOT_URL}/` });
     await sleep(500);
     const indexShot = await client.send('Page.captureScreenshot', { format: 'png' });
     writeFileSync(join(SHOTS, 'ana-sayfa.png'), Buffer.from(indexShot.data, 'base64'));
 
     // tanıtım sayfası: ürün iddiaları, indirme kartı, dış kaynak yok
     await client.send('Emulation.clearDeviceMetricsOverride');
-    await client.send('Page.navigate', { url: `http://127.0.0.1:${PORT}/tanitim.html` });
+    await client.send('Page.navigate', { url: `${ROOT_URL}/tanitim.html` });
     await sleep(500);
     const intro = JSON.parse(
       await evaluate(
@@ -413,7 +426,7 @@ async function main() {
     // ana sayfa + metodoloji dumanı
     for (const path of ['/', '/tanitim.html', '/metodoloji.html', '/veri-kaynaklari.html', '/bos-kalan-kadrolar.html', '/kadrolar/']) {
       await client.send('Emulation.clearDeviceMetricsOverride');
-      await client.send('Page.navigate', { url: `http://127.0.0.1:${PORT}${path}` });
+      await client.send('Page.navigate', { url: `${ROOT_URL}${path}` });
       await sleep(400);
       const title = await evaluate(client, 'document.title');
       check(`sayfa açılıyor ${path}`, Boolean(title), title);
