@@ -237,6 +237,79 @@ async function main() {
       `${totalRows} → ${programRows} satır · ${programLabel ?? 'program seçilemedi'}`,
     );
 
+    // --- arama aksan duyarsızlığı: `hemsire` HEMŞİRE'yi, `muhendis` MÜHENDİS'i bulmalı.
+    // Sayaçların yorumlanabilir olması için görünmez filtreler sıfırlanır.
+    const setQuery = (value) =>
+      evaluate(client, `(() => { const i = document.querySelector('#query'); i.value = ${JSON.stringify(value)}; i.dispatchEvent(new Event('input')); })()`);
+    const clearAllFilters = async () => {
+      await evaluate(
+        client,
+        "(() => { const q = document.querySelector('#query'); q.value = ''; q.dispatchEvent(new Event('input')); for (const id of ['#il', '#unvan', '#kurum', '#program']) { const s = document.querySelector(id); s.value = ''; s.dispatchEvent(new Event('change')); } const w = document.querySelector('#onlyWritable'); w.checked = false; w.dispatchEvent(new Event('change')); })()",
+      );
+      await sleep(200);
+    };
+    const gotoLevel = async (level) => {
+      await evaluate(client, `(() => { const s = document.querySelector('#level'); s.value = ${JSON.stringify(level)}; s.dispatchEvent(new Event('change')); })()`);
+      for (let i = 0; i < 40; i += 1) {
+        const ready = await evaluate(client, "document.querySelectorAll('#rows tr').length > 0");
+        if (ready) break;
+        await sleep(250);
+      }
+      await clearAllFilters();
+    };
+    const visibleRows = () => evaluate(client, "document.querySelectorAll('#rows tr').length");
+
+    await gotoLevel('lisans');
+    await setQuery('mühendis');
+    await sleep(150);
+    const turkceMuhendis = await visibleRows();
+    await setQuery('muhendis');
+    await sleep(150);
+    const asciiMuhendis = await visibleRows();
+    check('aksansız arama (muhendis) mühendis satırlarını buluyor', turkceMuhendis > 0 && asciiMuhendis === turkceMuhendis, `mühendis ${turkceMuhendis} · muhendis ${asciiMuhendis}`);
+
+    await setQuery('hemsire');
+    await sleep(150);
+    const hemsireRows = await visibleRows();
+    check('hemsire yazımı HEMŞİRE kadrosunu buluyor (2026/1: 1 satır)', hemsireRows === 1, `${hemsireRows} satır`);
+
+    await gotoLevel('ortaogretim');
+    await setQuery('hemşire');
+    await sleep(400);
+    const bosSatir = await visibleRows();
+    const notMetni = await evaluate(client, "(() => { const n = document.querySelector('#emptyNote'); return n && !n.hidden ? n.textContent.replace(/\\s+/g, ' ').trim() : ''; })()");
+    check(
+      'boş tabloda teşhis var: diğer düzey + geçmiş dönem sayıları',
+      bosSatir === 0 && notMetni.includes('HEMŞİRE') && notMetni.includes('2025/2') && notMetni.includes('lisans 8'),
+      notMetni.slice(0, 150) || 'boş not yok',
+    );
+    const switchButton = await evaluate(client, "document.querySelector('#emptyNote [data-switch-level=\"lisans\"]') !== null");
+    check('teşhis, kadronun olduğu düzeye geçme düğmesi veriyor', switchButton === true);
+
+    await gotoLevel('onlisans');
+    await setQuery('saglik');
+    await sleep(150);
+    const saglikRows = await visibleRows();
+    check('saglik yazımı SAĞLIK MEMURU / SAĞLIK TEKNİKERİ satırlarını buluyor', saglikRows > 0, `${saglikRows} satır`);
+
+    await gotoLevel('lisans');
+    await evaluate(
+      client,
+      "(() => { const i = document.querySelector('#programSearch'); i.value = 'hemsire'; i.dispatchEvent(new Event('input')); })()",
+    );
+    await sleep(200);
+    const programFound = await evaluate(
+      client,
+      "(() => { const s = document.querySelector('#program'); const hit = [...s.options].find((o) => o.value && o.textContent.trim() === 'HEMŞİRELİK'); return JSON.stringify({ hit: hit ? hit.value : null, options: s.options.length, note: document.querySelector('#programMatch').textContent }); })()",
+    );
+    const parsedProgram = JSON.parse(programFound);
+    check(
+      'program arama kutusu HEMŞİRELİK programını buluyor (tek harfli optgroup çökmesi yok)',
+      parsedProgram.hit === '3204' && parsedProgram.options < 20 && /eşleşti/.test(parsedProgram.note),
+      `${parsedProgram.note} · seçenek ${parsedProgram.options} · kod ${parsedProgram.hit}`,
+    );
+    await clearAllFilters();
+
     const overflow = await evaluate(
       client,
       "(() => { const d = document.documentElement; return d.scrollWidth - d.clientWidth; })()",
@@ -268,7 +341,13 @@ async function main() {
     // her seviyede: tabloda görünen kontenjan toplamı = dist/data toplamı = resmî ÖSYM toplamı
     for (const [level, officialKontenjan] of [['lisans', 977], ['onlisans', 828], ['ortaogretim', 278]]) {
       await client.send('Page.navigate', { url: `${ROOT_URL}/uygulama.html?seviye=${level}&puan=85` });
-      await sleep(600);
+      // ilk yükleme soğuk olabilir (modül + iki JSON); satır gelene kadar bekle
+      for (let i = 0; i < 40; i += 1) {
+        const ready = await evaluate(client, "document.querySelectorAll('#rows tr').length > 0");
+        if (ready) break;
+        await sleep(250);
+      }
+      await sleep(150);
       const sumShown = await evaluate(
         client,
         "[...document.querySelectorAll('#rows tr')].reduce((s, tr) => s + (Number(tr.querySelectorAll('td')[1].textContent.trim()) || 0), 0)",
@@ -309,8 +388,19 @@ async function main() {
     await sleep(150);
     const filtered = await evaluate(client, "document.querySelectorAll('#unvan-rows tr[data-name]:not([hidden])').length");
     check('unvan süzgeci daraltıyor', filtered > 0 && filtered < unvanRows, `${unvanRows} → ${filtered}`);
+    await evaluate(
+      client,
+      "(() => { const i = document.querySelector('#unvan-filter'); i.value = 'muhendis'; i.dispatchEvent(new Event('input')); })()",
+    );
+    await sleep(150);
+    const foldedFilter = await evaluate(client, "document.querySelectorAll('#unvan-rows tr[data-name]:not([hidden])').length");
+    check('unvan süzgeci aksansız yazımı da buluyor (muhendis → MÜHENDİS)', foldedFilter > 0, `${foldedFilter} unvan`);
     const counter = await evaluate(client, "document.querySelector('#unvan-count').textContent");
     check('süzgeç sayacı güncellendi', counter.includes('/'), counter);
+    await evaluate(
+      client,
+      "(() => { const i = document.querySelector('#unvan-filter'); i.value = ''; i.dispatchEvent(new Event('input')); })()",
+    );
     const indexListShot = await client.send('Page.captureScreenshot', { format: 'png' });
     writeFileSync(join(SHOTS, 'kadrolar.png'), Buffer.from(indexListShot.data, 'base64'));
 

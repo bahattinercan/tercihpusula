@@ -7,6 +7,7 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync, rmSync, cpSync, rea
 import { createHash } from 'node:crypto';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { buildSearchHints } from '../pipeline/lib/search-hints.mjs';
 
 const WEB = dirname(fileURLToPath(import.meta.url));
 const ROOT = dirname(WEB);
@@ -92,8 +93,8 @@ ${body}
 </div>
 </main>
 </div>
-${current === '/uygulama.html' ? '<script src="/assets/app.js" defer></script>' : ''}
-${body.includes('dizin-filter') ? '<script src="/assets/dizin.js" defer></script>' : ''}
+${current === '/uygulama.html' ? '<script type="module" src="/assets/app.js"></script>' : ''}
+${body.includes('dizin-filter') ? '<script type="module" src="/assets/dizin.js"></script>' : ''}
 </body>
 </html>`;
 }
@@ -162,6 +163,21 @@ function writePage(path, html) {
 // Kök altında yayınlanmayan hedefler için (GitHub Pages proje sitesi: /tercihpusula/)
 // şablonlardaki kökten mutlak yolları tek geçişte kaydırır. Şablonlara base değişkeni
 // serpiştirmek yerine çıktı üzerinde çalışır: tek yer, tek kural.
+// Boş sonuç teşhisi indeksi (bkz. pipeline/lib/search-hints.mjs): dönem + seviye satırları
+// beslenir, katlanmış unvan/il anahtarlarıyla sayımlar döner.
+function hintInput(levels, olderKeys) {
+  const current = Object.entries(levels).map(([level, data]) => ({ level, round: data.round, rows: data.rows }));
+  const history = [];
+  for (const older of olderKeys) {
+    for (const level of LEVELS) {
+      const file = join(ROUNDS, older, `${level}.json`);
+      if (!existsSync(file)) continue;
+      history.push({ period: older, level, rows: readJson(file).rows ?? [] });
+    }
+  }
+  return { current, history };
+}
+
 function applyBase(dist, base) {
   const rewrite = (file) => {
     const ext = file.slice(file.lastIndexOf('.'));
@@ -238,6 +254,7 @@ function main() {
     levelHint[field] = Object.fromEntries([...winners].map(([key, value]) => [key, value.level]));
   }
   writeFileSync(join(DIST, 'data', 'dizin.json'), JSON.stringify(levelHint));
+  writeFileSync(join(DIST, 'data', 'search-hints.json'), JSON.stringify(buildSearchHints(hintInput(levels, olderKeys))));
 
   const totals = Object.values(levels).reduce(
     (acc, data) => ({
@@ -306,7 +323,9 @@ function main() {
 <div id="error" class="note" hidden></div>
 <form class="filters" id="filters" novalidate>
   <div class="full"><label for="program">mezun olduğunuz program</label>
-    <select id="program"></select>
+    <input id="programSearch" type="search" placeholder="program ara: hemşirelik, mühendis, büro…" autocomplete="off" style="margin-top:6px">
+    <select id="program" style="margin-top:6px"></select>
+    <div id="programMatch" class="hint" style="margin-top:4px"></div>
     <div id="programNote" class="hint" style="margin-top:4px"></div></div>
   <div><label for="level">öğrenim düzeyi</label>
     <select id="level"><option value="lisans">${LEVEL_LABEL.lisans}</option><option value="onlisans">${LEVEL_LABEL.onlisans}</option><option value="ortaogretim">${LEVEL_LABEL.ortaogretim}</option></select></div>
@@ -323,11 +342,14 @@ function main() {
   <span class="count" id="count"></span>
 </div>
 <div class="grid-2">
-  <div class="table-wrap">
-    <table>
-      <thead><tr><th>kadro</th><th class="num">kont.</th><th class="num">geçen taban</th><th class="num">tahmin</th><th>durum</th><th></th></tr></thead>
-      <tbody id="rows"></tbody>
-    </table>
+  <div class="stack">
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>kadro</th><th class="num">kont.</th><th class="num">geçen taban</th><th class="num">tahmin</th><th>durum</th><th></th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+    <div id="emptyNote" class="note" hidden></div>
   </div>
   <aside class="card">
     <div class="panel-title"><h3>Tercih listem</h3><span class="stamp" id="listMeta"></span></div>

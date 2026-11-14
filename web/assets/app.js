@@ -1,5 +1,6 @@
 // Tercih Pusulası — uygulama adası. Çerçeve yok, bağımlılık yok.
 // Veri /data/<seviye>.json içinde; 555 satırlık en büyük liste tarayıcıda rahat.
+import { foldTr } from './fold.js';
 
 const MAX_TERCIH = 30;
 // 2025/2 lisans 990 satır: tavan tüm dönemleri kapsar, hiçbir satır gizlenmez
@@ -23,6 +24,8 @@ const state = {
   level: 'lisans',
   puan: null,
   programKod: null,
+  programSearch: '',
+  hints: null,
   il: '',
   unvan: '',
   kurum: '',
@@ -84,7 +87,7 @@ function manualCodes(row) {
 
 function filteredRows() {
   const sigma = state.data.sigma ?? 6;
-  const needle = state.query.trim().toLocaleLowerCase('tr');
+  const needle = foldTr(state.query.trim());
   return state.data.rows.filter((row) => {
     if (state.onlyWritable && !isWritable(row)) return false;
     if (state.onlyEmpty && !row.bos) return false;
@@ -92,7 +95,7 @@ function filteredRows() {
     if (state.unvan && row.unvan !== state.unvan) return false;
     if (state.kurum && row.kurum !== state.kurum) return false;
     if (needle) {
-      const haystack = `${row.kurum} ${row.unvan} ${row.il} ${row.kod}`.toLocaleLowerCase('tr');
+      const haystack = foldTr(`${row.kurum} ${row.unvan} ${row.il} ${row.kod}`);
       if (!haystack.includes(needle)) return false;
     }
     return true;
@@ -135,6 +138,7 @@ function renderTable() {
   }
   body.replaceChildren(frag);
   $('#count').textContent = `${rows.length} satır${rows.length > MAX_ROWS ? ` (ilk ${MAX_ROWS} gösteriliyor, filtreyi daraltın)` : ''}`;
+  renderEmptyNote(rows);
 }
 
 function renderList() {
@@ -189,27 +193,140 @@ function syncUrl() {
   if (share) share.value = `${location.origin}${location.pathname}?${next}`;
 }
 
-function fillProgrammes() {
+// Program listesi: eskiden `p.a[0]` ile gruplanıyordu ama `a` bir dizi değil metin; 1269
+// program tek harfli optgroup'lara (A, H, İ…) dağılıp bulunamaz hale geliyordu. Şimdi düz,
+// Türkçe sıralı ve katlanmış arama ile süzülmüş bir liste.
+function renderProgrammes() {
   const select = $('#program');
-  const groups = new Map();
-  for (const p of state.data.programmes) {
-    const key = p.a[0];
-    if (!groups.has(key)) groups.set(key, []);
-    groups.get(key).push(p);
-  }
+  const all = state.data?.programmes ?? [];
+  const needle = foldTr(state.programSearch);
+  const items = all
+    .filter((p) => !needle || foldTr(p.a).includes(needle))
+    .sort((a, b) => a.a.localeCompare(b.a, 'tr'));
+  const chosen = state.programKod ? all.find((p) => String(p.k) === String(state.programKod)) : null;
+  const list = chosen && !items.includes(chosen) ? [chosen, ...items] : items;
   select.innerHTML =
-    '<option value="">Mezun olduğunuz programı seçin</option>' +
-    [...groups]
-      .sort(([a], [b]) => a.localeCompare(b, 'tr'))
-      .map(
-        ([key, items]) =>
-          `<optgroup label="${key}">${items
-            .sort((a, b) => a.a.localeCompare(b.a, 'tr'))
-            .map((p) => `<option value="${p.k}">${p.a}</option>`)
-            .join('')}</optgroup>`,
-      )
-      .join('');
-  if (state.programKod) select.value = String(state.programKod);
+    `<option value="">Mezun olduğunuz programı seçin (${all.length})</option>` +
+    list.map((p) => `<option value="${p.k}">${esc(p.a)}</option>`).join('');
+  if (chosen) select.value = String(chosen.k);
+  const match = $('#programMatch');
+  if (match) match.textContent = needle ? `${list.length} program eşleşti` : '';
+}
+
+const LEVEL_NAME = { lisans: 'lisans', onlisans: 'ön lisans', ortaogretim: 'lise' };
+const periodLabel = (period) => (period === 'buDonem' ? state.data?.round ?? 'bu dönem' : period.replace('-', '/'));
+
+// Arama boş döndüğünde tek tuşla tüm daraltıcıları gevşet: kullanıcı "çalışmıyor" derken
+// çoğu zaman görünmez bir filtre (il/unvan/program) kesişimi kastedilir.
+function clearFilters() {
+  state.query = '';
+  state.il = '';
+  state.unvan = '';
+  state.kurum = '';
+  state.onlyWritable = false;
+  state.onlyEmpty = false;
+  $('#query').value = '';
+  for (const id of ['#il', '#unvan', '#kurum']) $(id).value = '';
+  $('#onlyWritable').checked = false;
+  $('#onlyEmpty').checked = false;
+  renderTable();
+}
+
+async function ensureHints() {
+  if (state.hints !== null) return state.hints;
+  try {
+    const res = await fetch('/data/search-hints.json');
+    state.hints = res.ok ? await res.json() : {};
+  } catch {
+    state.hints = {};
+  }
+  return state.hints;
+}
+
+const bucketTotal = (bucket) =>
+  Object.values(bucket?.counts ?? {}).reduce((sum, byLevel) => sum + Object.values(byLevel).reduce((s, n) => s + n, 0), 0);
+
+const levelCountLine = (byLevel) =>
+  LEVELS.filter((level) => byLevel?.[level]).map((level) => `${LEVEL_NAME[level]} ${byLevel[level]}`).join(' · ') || 'yok';
+
+function activeFilterLine() {
+  const parts = [];
+  if (state.il) parts.push(`il: ${esc(state.il)}`);
+  if (state.unvan) parts.push(`unvan: ${esc(state.unvan)}`);
+  if (state.kurum) parts.push(`kurum: ${esc(state.kurum)}`);
+  if (state.programKod) parts.push('program seçili');
+  if (state.onlyWritable) parts.push('sadece yazabileceklerim');
+  if (state.onlyEmpty) parts.push('boş kalanlar');
+  return parts;
+}
+
+// Sessiz boş tablo yerine gerekçe: aranan unvan bu dönemde hiç mi açılmadı, başka düzeyde mi
+// var, geçmiş dönemde kaç kadroydu. Yanıt /data/search-hints.json'dan gelir.
+async function renderEmptyNote(rows) {
+  const box = $('#emptyNote');
+  if (!box) return;
+  if (rows.length > 0) {
+    box.hidden = true;
+    box.innerHTML = '';
+    return;
+  }
+  const asked = state.query.trim();
+  const levelAtStart = state.level;
+  const lines = [`<p><button class="ghost small" type="button" data-clear-filters>filtreleri temizle</button></p>`];
+  if (!asked) {
+    const filters = activeFilterLine();
+    lines.unshift(
+      `<p>${filters.length ? `Filtrelerin kesişimi boş: ${filters.join(' · ')}.` : 'Bu düzeyde kayıtlı kadro yok.'}</p>`,
+    );
+    box.innerHTML = lines.join('');
+    box.hidden = false;
+    return;
+  }
+  const needle = foldTr(asked);
+  const head =
+    `<p><strong>“${esc(asked)}”</strong> ${LEVEL_NAME[levelAtStart]} düzeyinde satır bulamadı. ` +
+    `Arama kurum, unvan, il ve kadro kodunu tarar; ş/ğ/ü/ö/ç/ı/İ fark etmez.</p>`;
+  const programmeHits = (state.data?.programmes ?? [])
+    .filter((p) => foldTr(p.a).includes(needle))
+    .slice(0, 3)
+    .map(
+      (p) =>
+        `<p>Mezuniyet programı eşleşmesi: <strong>${esc(p.a)}</strong> ` +
+        `<button class="ghost small" type="button" data-program="${p.k}">programı seç</button></p>`,
+    );
+  const hints = await ensureHints();
+  // Bu bekleyiş arasında kullanıcı filtre değiştirdiyse çıktı bayattır, yazmayın.
+  if (state.query.trim() !== asked || state.level !== levelAtStart) return;
+  const crossLines = [];
+  for (const field of ['unvan', 'il']) {
+    const entries = Object.entries(hints?.[field] ?? {})
+      .filter(([key]) => key.includes(needle) || needle.includes(key))
+      .sort((a, b) => bucketTotal(b[1]) - bucketTotal(a[1]))
+      .slice(0, 2);
+    for (const [, bucket] of entries) {
+      const thisRound = bucket.counts?.buDonem ?? {};
+      const switches = LEVELS.filter((level) => level !== levelAtStart && thisRound[level])
+        .map(
+          (level) =>
+            `<button class="ghost small" type="button" data-switch-level="${level}">${LEVEL_NAME[level]} (${thisRound[level]})</button>`,
+        )
+        .join(' ');
+      const history = Object.entries(bucket.counts ?? {})
+        .filter(([period]) => period !== 'buDonem')
+        .sort((a, b) => b[0].localeCompare(a[0]))
+        .slice(0, 3)
+        .map(([period, byLevel]) => `${periodLabel(period)}: ${levelCountLine(byLevel)}`)
+        .join(' · ');
+      crossLines.push(
+        `<p><strong>${esc(bucket.label)}</strong> · ${state.data?.round ?? 'bu dönem'}: ${levelCountLine(thisRound)}` +
+          (switches ? ` — ${switches}` : '') +
+          (history ? `<br><span class="hint">geçmiş dönemler: ${history}</span>` : '') +
+          `</p>`,
+      );
+    }
+  }
+  box.innerHTML = head + crossLines.join('') + programmeHits.join('') + lines[0];
+  box.hidden = false;
 }
 
 function fillSelects() {
@@ -252,7 +369,7 @@ async function loadLevel(level) {
     state.list = [];
   }
   $('#round').textContent = state.data.round;
-  fillProgrammes();
+  renderProgrammes();
   fillSelects();
   applyProgramme();
   renderTable();
@@ -299,6 +416,10 @@ function bind() {
     state.query = event.target.value;
     renderTable();
   });
+  $('#programSearch').addEventListener('input', (event) => {
+    state.programSearch = event.target.value;
+    renderProgrammes();
+  });
   $('#clear').addEventListener('click', () => {
     state.list = [];
     renderList();
@@ -307,6 +428,29 @@ function bind() {
   });
 
   document.addEventListener('click', (event) => {
+    const clear = event.target.closest('[data-clear-filters]');
+    if (clear) {
+      clearFilters();
+      return;
+    }
+    const switchLevel = event.target.closest('[data-switch-level]');
+    if (switchLevel) {
+      const level = switchLevel.dataset.switchLevel;
+      if (LEVELS.includes(level)) {
+        $('#level').value = level;
+        loadLevel(level).catch(showError);
+      }
+      return;
+    }
+    const pickProgram = event.target.closest('[data-program]');
+    if (pickProgram) {
+      state.programKod = Number(pickProgram.dataset.program);
+      $('#program').value = String(state.programKod);
+      applyProgramme();
+      renderTable();
+      syncUrl();
+      return;
+    }
     const add = event.target.closest('[data-add]');
     if (add) {
       const kod = add.dataset.add;

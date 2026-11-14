@@ -1,5 +1,7 @@
 // Kadro dizini sayfası: unvan ve il listelerini tarayıcıda süzer.
 // Sunucu yok, ek istek yok — 57 + 81 satır için tamamen yeterli.
+import { foldTr } from './fold.js';
+
 for (const input of document.querySelectorAll('.dizin-filter')) {
   const body = document.getElementById(input.dataset.target);
   const counter = document.getElementById(input.dataset.count);
@@ -11,10 +13,11 @@ for (const input of document.querySelectorAll('.dizin-filter')) {
   body.append(empty);
 
   const apply = () => {
-    const needle = input.value.trim().toLocaleLowerCase('tr');
+    // Katlama şart: `muhendis` yazımı MÜHENDİS'i, `hemsire` yazımı HEMŞİRE'yi bulmalı.
+    const needle = foldTr(input.value.trim());
     let shown = 0;
     for (const row of rows) {
-      const hit = !needle || (row.dataset.name ?? row.textContent).toLocaleLowerCase('tr').includes(needle);
+      const hit = !needle || foldTr(row.dataset.name ?? row.textContent).includes(needle);
       row.hidden = !hit;
       if (hit) shown += 1;
     }
