@@ -12,6 +12,7 @@ three on one screen and publishes its own error rate.
 [![Static pages](https://img.shields.io/badge/static%20pages-140-1a5fd0?style=flat-square)](web/build.mjs)
 [![Tests](https://img.shields.io/badge/unit%20tests-38%2F38-3c873a?style=flat-square)](tests)
 [![Desktop](https://img.shields.io/badge/windows%20app-download%20%C2%B7%201.8%20MB-2ea44f?style=flat-square)](https://github.com/bahattinercan/tercihpusula/releases/latest)
+[![Live](https://img.shields.io/badge/live-tercihpusula-1a5fd0?style=flat-square)](https://bahattinercan.github.io/tercihpusula/)
 
 > **Not an official source.** The binding documents are the ÖSYM guide for the term and
 > [ais.osym.gov.tr](https://ais.osym.gov.tr). Predictions come from past placements and guarantee
@@ -22,6 +23,13 @@ three on one screen and publishes its own error rate.
 **[TercihPusula-win-x64-2026-1.zip](https://github.com/bahattinercan/tercihpusula/releases/latest)**
 · 1.75 MB · unzip, double-click `TercihPusula.exe`. No installer, no registry, no admin rights, no
 network.
+
+### Live site
+
+**https://bahattinercan.github.io/tercihpusula/** — the whole app runs in the browser; the Turkish
+product page is at [`/tanitim.html`](https://bahattinercan.github.io/tercihpusula/tanitim.html).
+Deployed by `.github/workflows/pages.yml` on every push to `master`; the build runs under a path
+prefix (`TP_BASE`) because GitHub Pages serves a project site from `/tercihpusula/`.
 
 **Contents** · [Download](#download-for-windows) · [Screens](#screens) · [What it does](#what-it-does) · [How it works](#how-it-works) ·
 [Accuracy](#accuracy--published-not-promised) · [Data model](#data-model) ·
@@ -220,10 +228,15 @@ measured ~2 s per request), plus troubleshooting and rollback: [`docs/desktop-ap
 
 ## Deploy
 
-Static output, edge-ready: `npx wrangler pages deploy dist --project-name tercihpusula`
-(`dist/_headers` carries the security headers). `npm run gate` must be green first.
+Two targets, both from the same `dist/`:
 
-The 2026/2 preference window is **17–24 December 2026**; launch-day order is in `RUNBOOK.md` §3–5.
+| Target | Command | Notes |
+|---|---|---|
+| GitHub Pages (live now) | push to `master` → `.github/workflows/pages.yml` | serves from `/tercihpusula/`, so the workflow builds with `TP_BASE` and `TP_META_CSP` (Pages ignores `dist/_headers`) |
+| Cloudflare Pages | `npx wrangler pages deploy dist --project-name tercihpusula` | root origin, `dist/_headers` applies the full CSP including `frame-ancestors` |
+
+`npm run gate` must be green first. The 2026/2 preference window is **17–24 December 2026**;
+launch-day order is in `RUNBOOK.md` §3–5.
 
 ## Security posture
 
@@ -267,7 +280,7 @@ build/           packaged exe + zip (gitignored)
 Data is derived from ÖSYM's public documents. The kpssden.com open dataset (CC BY 4.0) was used for
 cross-checking: *"KPSSDEN (kpssden.com), ÖSYM verilerinden derlenmiştir."*
 
-Code licence: not chosen yet — the repository is private and not licensed for reuse.
+Code licence: not chosen yet — no reuse licence is granted.
 
 ---
 ---
@@ -284,6 +297,13 @@ her zaman güncel tercih kılavuzu ve `ais.osym.gov.tr`'dir.
 **[TercihPusula-win-x64-2026-1.zip](https://github.com/bahattinercan/tercihpusula/releases/latest)**
 · 1,75 MB · zip'i açın, `TercihPusula.exe`'ye çift tıklayın. Kurulum yok, kayıt defteri yok,
 yönetici hakkı yok, ağ yok.
+
+### Canlı site
+
+**https://bahattinercan.github.io/tercihpusula/** — uygulamanın tamamı tarayıcıda çalışır; Türkçe
+tanıtım sayfası [`/tanitim.html`](https://bahattinercan.github.io/tercihpusula/tanitim.html).
+Her `master` push'unda `.github/workflows/pages.yml` yayınlar; GitHub Pages proje sitesi
+`/tercihpusula/` altından servis ettiği için build `TP_BASE` ile üretilir.
 
 **İçindekiler** · [İndir](#windows-için-indir) · [Görünüm](#görünüm) · [Ne yapar](#ne-yapar) · [Nasıl çalışır](#nasıl-çalışır) ·
 [Doğruluk](#ölçülen-doğruluk) · [Doğrulama](#doğrulama) · [Hızlı başlangıç](#hızlı-başlangıç) ·
@@ -442,10 +462,12 @@ istek yok. Puan ve liste sunucuya gitmez: yalnız `localStorage` ve URL'de.
 
 ## Yayın
 
-`npx wrangler pages deploy dist --project-name tercihpusula` — statik çıktı, edge'e hazır
-(`dist/_headers` güvenlik başlıklarını taşır). Yayın öncesi `npm run gate` yeşil olmalı. KPSS 2026/2
-tercih penceresi **17–24 Aralık 2026**; yayın günü sırası `RUNBOOK.md` §3–5'te, karar ve ölçüm
-günlüğü `plani.md` dosyasında.
+Şu an GitHub Pages'te: `master` push'u → `.github/workflows/pages.yml` → https://bahattinercan.github.io/tercihpusula/
+(proje sitesi `/tercihpusula/` altında olduğu için build `TP_BASE` ile üretiliyor, CSP `_headers`
+yerine `<meta>` ile taşınıyor). Kök alan adına çıkmak istenirse Cloudflare Pages:
+`npx wrangler pages deploy dist --project-name tercihpusula` — `dist/_headers` tam CSP'yi uygular.
+Yayın öncesi `npm run gate` yeşil olmalı. KPSS 2026/2 tercih penceresi **17–24 Aralık 2026**;
+yayın günü sırası `RUNBOOK.md` §3–5'te, karar ve ölçüm günlüğü `plani.md` dosyasında.
 
 ## Sınırlar
 
@@ -457,4 +479,4 @@ akademik danışmanlık vermez.
 
 Veri ÖSYM'nin kamuya açık belgelerinden türetilmiştir. Çapraz doğrulama için kpssden.com açık veri
 seti (CC BY 4.0) kullanılmıştır: *"KPSSDEN (kpssden.com), ÖSYM verilerinden derlenmiştir."*
-Kod lisansı henüz seçilmedi; depo özeldir ve yeniden kullanım için lisanslanmamıştır.
+Kod lisansı henüz seçilmedi; yeniden kullanım için lisans verilmiyor.

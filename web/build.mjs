@@ -604,7 +604,7 @@ exe'yi çalıştırmak yeterli. İçerik yerel bir dinleyiciden sunulur, ağa ç
     <dt>boyut</dt><dd>${download?.size ?? '—'}</dd>
     <dt>sürüm · veri</dt><dd>${escapeHtml(APP_VERSION)} · ${escapeHtml(round)}</dd>
     <dt>gereksinim</dt><dd>Windows 10/11 x64 · WebView2</dd>
-    <dt>sha256</dt><dd>${download?.sha ?? 'sürüm sayfasında'}</dd>
+    <dt>sha256</dt><dd>${download?.sha ?? 'sürüm notlarında'}</dd>
     <dt>imza</dt><dd>imzasız · ilk açılışta “Yine de çalıştır”</dd>
   </dl>
 </div>
