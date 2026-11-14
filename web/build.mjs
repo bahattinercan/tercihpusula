@@ -3,7 +3,8 @@
 //        data/rounds/backtest.json
 // Çıktı: dist/ (HTML + JSON + assets), edge cache'e uygun tamamen statik.
 
-import { readFileSync, writeFileSync, mkdirSync, existsSync, rmSync, cpSync, readdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync, rmSync, cpSync, readdirSync, statSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -11,6 +12,12 @@ const WEB = dirname(fileURLToPath(import.meta.url));
 const ROOT = dirname(WEB);
 const ROUNDS = join(ROOT, 'data', 'rounds');
 const DIST = join(ROOT, 'dist');
+const SHOTS = join(ROOT, 'docs', 'screenshots');
+const APP_VERSION = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')).version;
+// İndirme düğmesi: varsayılan GitHub sürümü. Statik site kendi barındırdığı zip'i
+// verecekse TP_DOWNLOAD_URL ile (ör. /indir/TercihPusula-win-x64-2026-1.zip) ezilir.
+const RELEASE_URL = 'https://github.com/bahattinercan/tercihpusula/releases/latest';
+const DOWNLOAD_URL = process.env.TP_DOWNLOAD_URL || RELEASE_URL;
 const LEVELS = ['lisans', 'onlisans', 'ortaogretim'];
 const LEVEL_LABEL = { lisans: 'Lisans (P3)', onlisans: 'Ön lisans (P93)', ortaogretim: 'Ortaöğretim (P94)' };
 const ROUND_DIRS = readdirSync(ROUNDS).filter((name) => /^\d{4}-\d$/.test(name)).sort();
@@ -33,6 +40,7 @@ const NAV = [
   ['/bos-kalan-kadrolar.html', 'Boş kalan kadrolar'],
   ['/metodoloji.html', 'Metodoloji'],
   ['/veri-kaynaklari.html', 'Veri ve kaynak'],
+  ['/tanitim.html', 'Tanıtım'],
 ];
 
 function layout({ title, description, current, body, round }) {
@@ -153,6 +161,8 @@ function main() {
   rmSync(DIST, { recursive: true, force: true });
   mkdirSync(join(DIST, 'data'), { recursive: true });
   cpSync(join(WEB, 'assets'), join(DIST, 'assets'), { recursive: true });
+  // tanıtım sayfası ekran görüntüleri (smoke üretir, docs/ altında commit'lenir)
+  if (existsSync(SHOTS)) cpSync(SHOTS, join(DIST, 'assets', 'shots'), { recursive: true });
   // güvenlik başlıkları: Cloudflare Pages / Netlify dist kökündeki _headers dosyasını okur
   if (existsSync(join(WEB, '_headers'))) cpSync(join(WEB, '_headers'), join(DIST, '_headers'));
 
@@ -309,7 +319,7 @@ function main() {
     .map((level) => {
       const entry = gateReport.find((r) => r.name === 'F' && r.level === level);
       if (!entry?.rates) return '';
-      const pct = (value) => (value === null || value === undefined ? '—' : `%${(value * 100).toFixed(1)}`);
+      const pct = (value) => (value === null || value === undefined ? '—' : `%${(value * 100).toFixed(1).replace('.', ',')}`);
       return `<tr><td>${LEVEL_LABEL[level]}</td><td class="num">${pct(entry.rates.il)}</td><td class="num">${pct(entry.rates.kontenjan)}</td><td class="num">${pct(entry.rates.unvan)}</td><td class="num">${pct(entry.rates.kurum)}</td></tr>`;
     })
     .join('');
@@ -439,6 +449,162 @@ ${['garanti', 'hedef', 'riskli', 'uzak']
 <tr><td>aralık</td><td class="mono">tahmin ± σ (düzey başına, yukarıda)</td></tr>
 <tr><td>veri kapıları</td><td class="mono">A–F · biri düşerse yayın durur</td></tr>
 </tbody></table></div>`,
+    }),
+  );
+
+  // ---- tanıtım: ürün sayfası (ne, neden, ne kadar güvenilir, nasıl indirilir)
+  const roundCount = ROUND_DIRS.length;
+  const downloadZip = join(ROOT, 'build', `TercihPusula-win-x64-${key}.zip`);
+  const download = existsSync(downloadZip)
+    ? {
+        name: `TercihPusula-win-x64-${key}.zip`,
+        size: `${(statSync(downloadZip).size / 1048576).toFixed(2).replace('.', ',')} MB`,
+        sha: createHash('sha256').update(readFileSync(downloadZip)).digest('hex'),
+      }
+    : null;
+  const comparedTotal = (backtest?.summary ?? []).reduce((sum, entry) => sum + (entry.compared ?? 0), 0);
+  const pairCount = new Set((backtest?.report ?? []).map((pair) => `${pair.from}→${pair.to}`)).size;
+  const accuracyRows = (backtest?.summary ?? [])
+    .map(
+      (entry) => `<tr><td>${LEVEL_LABEL[entry.level] ?? entry.level}</td>
+      <td class="num">${(entry.mae ?? 0).toFixed(2).replace('.', ',')}</td>
+      <td class="num">±${(backtest.sigma[entry.level] ?? 0).toFixed(2).replace('.', ',')}</td>
+      <td class="num">${pctM(entry.coverage ?? 0, 1)}</td>
+      <td class="num dim">${entry.compared}</td></tr>`,
+    )
+    .join('');
+  const anchorAccuracyRows = ['unvan_il', 'same_kod', 'unvan']
+    .filter((name) => anchorUse[name])
+    .map((name) => {
+      const test = sourceMae[name];
+      return `<tr><td class="mono" style="font-size:12px">${escapeHtml(ANCHOR_LABEL[name] ?? name)}</td>
+      <td class="num">${pctM(anchorUse[name].total, anchorTotal)}</td>
+      <td class="num">${test?.compared ? (test.weighted / test.compared).toFixed(2).replace('.', ',') : '—'}</td>
+      <td class="num dim">${test?.compared ?? 0}</td></tr>`;
+    })
+    .join('');
+  const shotFiles = [
+    ['ana-sayfa.png', 'açılış', 'Kadro satırı, kontenjan ve boş kalan sayıları tek ekranda.'],
+    ['uygulama.png', 'tercih listesi', 'Puan ve program girilir; risk bantlı 30 slotlu liste kurulur.'],
+    ['kadrolar.png', 'kadro dizini', 'Unvan ve il tabloları: kontenjan, taban puan aralığı, boş kalan.'],
+    ['masaustu.png', 'windows', 'Aynı site, paketlenmiş masaüstü kabuğunda; adres satırı yok.'],
+  ].filter(([file]) => existsSync(join(SHOTS, file)));
+
+  writePage(
+    'tanitim.html',
+    layout({
+      title: 'Tercih Pusulası — proje tanıtımı ve Windows uygulaması',
+      description:
+        'KPSS tercih listesi için karar destek aracı: yazılabilir kadrolar, tahmini kapanış puanı, ölçülmüş hata payı ve çevrimdışı çalışan Windows uygulaması.',
+      current: '/tanitim.html',
+      round,
+      body: `<p class="kicker">proje · sürüm ${escapeHtml(APP_VERSION)} · KPSS ${escapeHtml(round)}</p>
+<h1>Otuz tercih, üç belge,<br>tek ekran.</h1>
+<p class="lede">KPSS merkezî yerleştirmesinde karar üç belgeye yayılıyor: kılavuz (hangi kadroya yazabilirim),
+geçen dönemin sonuç belgesi (kaçla kapandı), bu dönemin kılavuzu (ne değişti). Tercih Pusulası bu üçünü
+birleştirir, üstüne satır bazında tahmin koyar ve o tahminin ne kadar yanılabileceğini yayımlar.</p>
+<p class="cta-row">
+  <a class="btn" href="/uygulama.html">Tercih listesi kur →</a>
+  <a class="btn ghost" href="${DOWNLOAD_URL}" rel="noopener">Windows için indir</a>
+  <a class="btn ghost" href="/metodoloji.html">Nasıl hesaplanıyor</a>
+</p>
+<p class="small-note">Tarayıcıda çalışır, hesap açmanız gerekmez, kurulum istemez. Masaüstü sürümü aynı
+içeriği taşıyan tek dosyalık bir uygulamadır; internet olmadan da açılır.</p>
+<div class="tiles">
+  <div class="tile"><span class="label">dönem</span><span class="value">${roundCount}</span><span class="unit">anlık görüntü</span></div>
+  <div class="tile"><span class="label">kadro satırı</span><span class="value">${totals.rows}</span><span class="unit">3 seviye</span></div>
+  <div class="tile"><span class="label">lisans hata payı</span><span class="value">±${(sigmaByLevel.lisans ?? 0).toFixed(2).replace('.', ',')}</span><span class="unit">puan · ölçülmüş σ</span></div>
+  <div class="tile muted"><span class="label">runtime bağımlılık</span><span class="value">0</span><span class="unit">npm install yok</span></div>
+</div>
+<h2>Neden var</h2>
+<p>Otuz tercihin ilk beşi kadar onuncusu da önemli. Sık yapılan üç hata puan hesabında değil, listeyi
+kurarken çıkıyor: mezuniyetinize kapalı bir kadroyu yazmak, geçen dönem boş kalan bir kadroyu hiç
+görmemek, “garanti” sandığınız satırda puanı yakmak.</p>
+<p>Resmî belgeler bu soruları doğrudan yanıtlamıyor: sonuç belgesi geçen dönemi anlatır, kılavuz bu
+dönemi; ikisini birleştirmek adayın işi kalır. Hiçbiri de “bu tahmin ne kadar yanılabilir” demiyor.
+Bu sitede o sayı da yayımlanıyor.</p>
+<h2>Ne yapar</h2>
+<div class="tiles">
+  <div class="tile"><span class="label">01 · uygunluk</span><h3 style="margin:4px 0 0">Yazılabilir satırı ayıklar</h3><p>Kılavuzun nitelik kodları mezun olduğunuz programla eşleştirilir. Sertifika, ehliyet veya “bakınız özel şartlar” isteyen kodlar sessizce geçmez; satır <strong>kontrol et</strong> olarak işaretlenir.</p></div>
+  <div class="tile"><span class="label">02 · tahmin</span><h3 style="margin:4px 0 0">Satır bazında kapanış puanı</h3><p>Geçmiş dönemlerin gerçek taban puanlarından üç çapalı tahmin ve ± σ aralığı. Çapa sırası tercih değil, geri testte ölçülen hatadan geliyor.</p></div>
+  <div class="tile"><span class="label">03 · liste</span><h3 style="margin:4px 0 0">Otuz tercihi kurar</h3><p>Sıralama, risk bantları (garanti / hedef / riskli / uzak), liste düzeyinde yerleşme olasılığı ve paylaşılabilir bağlantı. Liste tarayıcınızda kalır.</p></div>
+  <div class="tile"><span class="label">04 · fırsat</span><h3 style="margin:4px 0 0">Boş kalan kadroları gösterir</h3><p>Geçen dönem kimsenin yerleşmediği ${totals.empty} satır ile unvan ve il başına kontenjan, taban puan aralığı ve son dönem boşlukları.</p></div>
+</div>
+<h2>Ölçülen doğruluk</h2>
+<p>Yöntem bir dönemde kurulup sonraki dönemde sınanıyor (rolling origin): ${pairCount} dönem çifti ×
+3 düzey, ${comparedTotal} satır. Aşağıdaki sayılar bu sitenin yayımladığı hata payının kendisi.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>düzey</th><th class="num">ortalama hata</th><th class="num">aralık (σ)</th><th class="num">aralık isabeti</th><th class="num">karşılaştırılan</th></tr></thead>
+<tbody>${accuracyRows}</tbody></table></div>
+<p class="small-note">Puan cinsinden ortalama hata. Aralık ± σ genişliğinde: normal dağılımda satırların yaklaşık
+%68'i bant içinde kalırdı, ölçümde lisansta %47,5 çıkıyor. Yani hata dağılımı normalden daha kalın
+kuyruklu; bandı daraltmak bu gerçeği gizlemek olurdu.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>çapa</th><th class="num">kullanım payı</th><th class="num">geri test hatası</th><th class="num">karşılaştırılan</th></tr></thead>
+<tbody>${anchorAccuracyRows}</tbody></table></div>
+<p class="small-note">“Aynı kadro kodu” sezgisel olarak en güvenilir çapa gibi görünür ama ölçümde en yüksek
+hatayı veriyor: kadro yeniden ilan edildiğinde aranan nitelikler değişebiliyor.</p>
+<h2>Veri kalitesi</h2>
+<p>Kadro tablosu ile aynı dönemin resmî sonuç belgeleri alan bazında karşılaştırılır. İl ve kontenjan
+kimlik taşıdığı için bu iki alan %99,5'in altına düşerse veri yayımlanmaz (A–F kapıları).</p>
+<div class="table-wrap"><table>
+<thead><tr><th>düzey</th><th class="num">il</th><th class="num">kontenjan</th><th class="num">unvan</th><th class="num">kurum</th></tr></thead>
+<tbody>${gateFRows}</tbody></table></div>
+<p class="small-note">Kurum metni PDF'te taşan hücrelerden etkilenir; satır kimliği her zaman kadro kodudur.
+${totals.rows} satır ayrıca bağımsız olarak <span class="mono">pdftotext -raw</span> ile yeniden okundu:
+kontenjan, yerleşen ve taban puan alanlarında fark çıkmadı.</p>
+${shotFiles.length ? `<h2>Ekranlar</h2>
+<div class="shot-grid">
+${shotFiles.map(([file, caption, alt]) => `  <figure class="shot"><img src="/assets/shots/${file}" alt="${escapeHtml(alt)}" loading="lazy" decoding="async"><figcaption>${escapeHtml(caption)}</figcaption></figure>`).join('\n')}
+</div>` : ''}
+<h2>Windows uygulaması</h2>
+<div class="dl-card">
+  <div>
+    <h3 style="margin-top:0">Çevrimdışı, tek dosya</h3>
+    <p>Site uygulamanın içine gömülü. Kurulum yok, kayıt defteri yok, yönetici hakkı yok; zip'i açıp
+exe'yi çalıştırmak yeterli. İçerik yerel bir dinleyiciden sunulur, ağa çıkmaz.</p>
+    <p class="cta-row"><a class="btn" href="${DOWNLOAD_URL}" rel="noopener">İndir →</a>
+    <a class="btn ghost" href="/uygulama.html">Önce tarayıcıda dene</a></p>
+  </div>
+  <dl>
+    <dt>dosya</dt><dd>${escapeHtml(download?.name ?? `TercihPusula-win-x64-${key}.zip`)}</dd>
+    <dt>boyut</dt><dd>${download?.size ?? '—'}</dd>
+    <dt>sürüm · veri</dt><dd>${escapeHtml(APP_VERSION)} · ${escapeHtml(round)}</dd>
+    <dt>gereksinim</dt><dd>Windows 10/11 x64 · WebView2</dd>
+    <dt>sha256</dt><dd>${download?.sha ?? 'sürüm sayfasında'}</dd>
+    <dt>imza</dt><dd>imzasız · ilk açılışta “Yine de çalıştır”</dd>
+  </dl>
+</div>
+<h2>Doğrulama</h2>
+<p>Yayından önce dört katman birlikte koşar; hangisi düşerse yayın durur.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>katman</th><th>ne ölçer</th><th>komut</th></tr></thead>
+<tbody>
+<tr><td>birim</td><td>parser, veri kapıları, yazılabilirlik, tahmin</td><td class="mono">npm test · 38/38</td></tr>
+<tr><td>veri kapıları</td><td>A resmî toplam · B şema · C dönem farkı · D bağımsız kaynak · E tablo↔sonuç · F alan doğruluğu</td><td class="mono">run.mjs gate</td></tr>
+<tr><td>tarayıcı</td><td>gerçek Chrome/Edge: tablo, süzgeç, liste, paylaşım, XSS, başlıklar</td><td class="mono">npm run smoke</td></tr>
+<tr><td>masaüstü</td><td>paketlenmiş exe: gömülü veri, liste kalıcılığı, dış gezinme engeli</td><td class="mono">desktop:check · 14/14</td></tr>
+</tbody></table></div>
+<h2>Sık sorulanlar</h2>
+<details class="faq"><summary>Ücretsiz mi, hesap açmam gerekiyor mu?</summary><p>Evet, 2026/2 dönemi için ücretsiz. Hesap, giriş ve ödeme yok; puanınız ve listeniz tarayıcınızın
+yerel deposunda kalır, sunucuya gönderilmez.</p></details>
+<details class="faq"><summary>ÖSYM ile bir bağlantısı var mı?</summary><p>Hayır. Bağımsız bir karar destek aracıdır. Bağlayıcı olan, ilgili dönemin ÖSYM tercih kılavuzu ve
+<span class="mono">ais.osym.gov.tr</span>'dir.</p></details>
+<details class="faq"><summary>Veriler nereden geliyor?</summary><p>ÖSYM'nin kamuya açık sonuç ve kılavuz belgelerinden. Her dönemin belgesi indirilip hash'lenir ve
+değişmez JSON anlık görüntüsü olarak saklanır; ayrıntı <a href="/veri-kaynaklari.html">veri ve kaynak</a> sayfasında.</p></details>
+<details class="faq"><summary>Tahmine ne kadar güvenebilirim?</summary><p>Lisans düzeyinde ortalama hata ${(backtest?.summary?.find((e) => e.level === 'lisans')?.mae ?? 0).toFixed(2).replace('.', ',')} puan,
+aralık ± ${(sigmaByLevel.lisans ?? 0).toFixed(2).replace('.', ',')}. Bu sayı gizlenmiyor, her satırda ve
+<a href="/metodoloji.html">metodoloji</a> sayfasında duruyor. Yerleşme garantisi değildir.</p></details>
+<details class="faq"><summary>Windows sürümü ile site arasında fark var mı?</summary><p>Aynı içerik. Masaüstü sürümü internet olmadan çalışır, tarayıcı çubuğu yoktur ve liste WebView2
+profilinde saklanır — uygulamayı güncelleseniz de kaybolmaz.</p></details>
+<details class="faq"><summary>Listemi başkasına gönderebilir miyim?</summary><p>Liste kurulduğunda bir paylaşım bağlantısı üretilir; yalnız bilinen kadro kodlarını taşır, puan
+göndermez.</p></details>
+<h2>Sınırlar</h2>
+<p>Kalabalık (aday havuzu) simülasyonu yok: adayların bu dönem hangi kadroya yöneleceği modele girmez.
+Kontenjan şoku yalnız küçük bir düzeltmeyle taşınır. Resmî yerleştirme aracı değildir, hukuki veya
+akademik danışmanlık vermez. Yöntemin neyi bilmediği <a href="/metodoloji.html">metodoloji</a>
+sayfasında listelenmiştir.</p>
+`,
     }),
   );
 
@@ -832,7 +998,7 @@ ${renderRowTable(sorted)}`,
     join(DIST, 'assets', 'favicon.svg'),
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#1a5fd0"/><path d="M32 12 44 32 32 52 20 32Z" fill="#fff"/><circle cx="32" cy="32" r="4" fill="#1a5fd0"/></svg>',
   );
-  const urls = ['/', '/uygulama.html', '/metodoloji.html', '/veri-kaynaklari.html', '/bos-kalan-kadrolar.html', '/kadrolar/', ...unvanLinks.map((l) => l.href), ...ilLinks.map((l) => l.href)];
+  const urls = ['/', '/uygulama.html', '/tanitim.html', '/metodoloji.html', '/veri-kaynaklari.html', '/bos-kalan-kadrolar.html', '/kadrolar/', ...unvanLinks.map((l) => l.href), ...ilLinks.map((l) => l.href)];
   writeFileSync(join(DIST, 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map((u) => `  <url><loc>https://tercihpusula.com${u}</loc></url>`).join('\n')}\n</urlset>\n`);
   writeFileSync(join(DIST, 'robots.txt'), 'User-agent: *\nAllow: /\nSitemap: https://tercihpusula.com/sitemap.xml\n');
 

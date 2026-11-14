@@ -193,7 +193,7 @@ internal static class SelfCheck
             var count = await shell.EvalNumberAsync(
                 "(()=>{const x=new XMLHttpRequest();x.open('GET','/sitemap.xml',false);x.send();" +
                 "return (x.responseText.match(/<loc>/g)||[]).length;})()") ?? -1;
-            return (count >= 139, $"{count} URL");
+            return (count >= 140, $"{count} URL");
         });
 
         await Check("no-external-resources", async () =>

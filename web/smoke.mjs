@@ -330,7 +330,7 @@ async function main() {
 
     // dağıtım hijyeni: dist kökünde yalnız yayımlanması gerekenler olmalı
     const ALLOWED_ROOT = new Set([
-      'assets', 'data', 'kadrolar', '_headers', 'index.html', 'uygulama.html',
+      'assets', 'data', 'kadrolar', '_headers', 'index.html', 'uygulama.html', 'tanitim.html',
       'metodoloji.html', 'veri-kaynaklari.html', 'bos-kalan-kadrolar.html',
       '404.html', 'manifest.webmanifest', 'robots.txt', 'sitemap.xml',
     ]);
@@ -372,8 +372,46 @@ async function main() {
     const indexShot = await client.send('Page.captureScreenshot', { format: 'png' });
     writeFileSync(join(SHOTS, 'ana-sayfa.png'), Buffer.from(indexShot.data, 'base64'));
 
+    // tanıtım sayfası: ürün iddiaları, indirme kartı, dış kaynak yok
+    await client.send('Emulation.clearDeviceMetricsOverride');
+    await client.send('Page.navigate', { url: `http://127.0.0.1:${PORT}/tanitim.html` });
+    await sleep(500);
+    const intro = JSON.parse(
+      await evaluate(
+        client,
+        "JSON.stringify({h1: document.querySelector('h1')?.textContent.trim() ?? '', ctas: document.querySelectorAll('.cta-row a').length, dl: document.querySelectorAll('.dl-card dd').length, faq: document.querySelectorAll('details.faq').length, shots: document.querySelectorAll('figure.shot img').length})",
+      ),
+    );
+    check(
+      'tanıtım: başlık + çağrı düğmeleri',
+      intro.h1.length > 0 && intro.ctas >= 3 && intro.faq >= 4 && intro.shots >= 3,
+      `${intro.ctas} cta · ${intro.faq} sss · ${intro.shots} görsel`,
+    );
+    const dlCard = JSON.parse(
+      await evaluate(
+        client,
+        "JSON.stringify({fields: document.querySelectorAll('.dl-card dd').length, href: [...document.querySelectorAll('.dl-card a')].map(a => a.href).find(h => h.startsWith('http')) ?? ''})",
+      ),
+    );
+    check('tanıtım: indirme kartı künyesi dolu', dlCard.fields >= 5 && /github\.com|\/indir\//.test(dlCard.href), `${dlCard.fields} alan · ${dlCard.href.slice(0, 48)}`);
+    const foreign = await evaluate(
+      client,
+      "performance.getEntriesByType('resource').filter(r => new URL(r.name).origin !== location.origin).map(r => r.name).length",
+    );
+    check('tanıtım: dış kaynak isteği yok', foreign === 0, `${foreign} dış istek`);
+    await client.send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
+    await sleep(220);
+    const introOverflow = await evaluate(client, 'document.documentElement.scrollWidth - document.documentElement.clientWidth');
+    check('tanıtım: yatay taşma yok (390px)', introOverflow <= 0, `${introOverflow}px`);
+    const introMobileShot = await client.send('Page.captureScreenshot', { format: 'png' });
+    writeFileSync(join(SHOTS, 'tanitim-mobil.png'), Buffer.from(introMobileShot.data, 'base64'));
+    await client.send('Emulation.clearDeviceMetricsOverride');
+    await sleep(200);
+    const introShot = await client.send('Page.captureScreenshot', { format: 'png' });
+    writeFileSync(join(SHOTS, 'tanitim.png'), Buffer.from(introShot.data, 'base64'));
+
     // ana sayfa + metodoloji dumanı
-    for (const path of ['/', '/metodoloji.html', '/veri-kaynaklari.html', '/bos-kalan-kadrolar.html', '/kadrolar/']) {
+    for (const path of ['/', '/tanitim.html', '/metodoloji.html', '/veri-kaynaklari.html', '/bos-kalan-kadrolar.html', '/kadrolar/']) {
       await client.send('Emulation.clearDeviceMetricsOverride');
       await client.send('Page.navigate', { url: `http://127.0.0.1:${PORT}${path}` });
       await sleep(400);

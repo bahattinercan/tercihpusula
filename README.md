@@ -9,9 +9,9 @@ three on one screen and publishes its own error rate.
 
 [![Node](https://img.shields.io/badge/node-%E2%89%A522-3c873a?style=flat-square)](package.json)
 [![Runtime dependencies](https://img.shields.io/badge/runtime%20dependencies-0-1a5fd0?style=flat-square)](package.json)
-[![Static pages](https://img.shields.io/badge/static%20pages-139-1a5fd0?style=flat-square)](web/build.mjs)
+[![Static pages](https://img.shields.io/badge/static%20pages-140-1a5fd0?style=flat-square)](web/build.mjs)
 [![Tests](https://img.shields.io/badge/unit%20tests-38%2F38-3c873a?style=flat-square)](tests)
-[![Desktop](https://img.shields.io/badge/windows%20app-download%20%C2%B7%201.3%20MB-2ea44f?style=flat-square)](https://github.com/bahattinercan/tercihpusula/releases/latest)
+[![Desktop](https://img.shields.io/badge/windows%20app-download%20%C2%B7%201.8%20MB-2ea44f?style=flat-square)](https://github.com/bahattinercan/tercihpusula/releases/latest)
 
 > **Not an official source.** The binding documents are the ÖSYM guide for the term and
 > [ais.osym.gov.tr](https://ais.osym.gov.tr). Predictions come from past placements and guarantee
@@ -20,7 +20,7 @@ three on one screen and publishes its own error rate.
 ### Download for Windows
 
 **[TercihPusula-win-x64-2026-1.zip](https://github.com/bahattinercan/tercihpusula/releases/latest)**
-· 1.31 MB · unzip, double-click `TercihPusula.exe`. No installer, no registry, no admin rights, no
+· 1.75 MB · unzip, double-click `TercihPusula.exe`. No installer, no registry, no admin rights, no
 network.
 
 **Contents** · [Download](#download-for-windows) · [Screens](#screens) · [What it does](#what-it-does) · [How it works](#how-it-works) ·
@@ -50,6 +50,7 @@ network.
 | 03 | Predicted closing score | Three-anchor historical model with a measured σ band; the error margin is published on `/metodoloji` |
 | 04 | Preference list | 30-slot builder, risk bands (safe / target / risky / far), shareable link, installable PWA |
 | 05 | Cadre index | A page per unvan (52) and per il (81) with quota, last-round range and cadres left empty |
+| 06 | Product page | `/tanitim.html` — what it is, measured accuracy, screenshots, Windows download and FAQ, all in Turkish |
 
 Qualification codes that hide a certificate, a licence or "see the special conditions" are **never
 skipped silently** — the row is flagged "kontrol et" (2026/1: 649 of 1,106 rows, 58.7 %).
@@ -75,7 +76,7 @@ flowchart LR
   E --> PR[predict<br/>3 anchors + band]
   B --> PR
   PR --> W[build.mjs]
-  W --> OUT[dist/<br/>139 static pages + JSON]
+  W --> OUT[dist/<br/>140 static pages + JSON]
   D --> GA[gates A–F]
   GA -.blocks publish.-> OUT
 ```
@@ -144,7 +145,7 @@ One cadre row carries the ÖSYM cadre code as its single source of truth:
 |---|---|---|---|
 | Unit | parsers, gates, eligibility, predictor | `npm test` | 38/38 |
 | Data gates | A official totals · B schema · C term delta · D independent source · E table↔result · F field accuracy | `node pipeline/run.mjs gate` | 9/9 · 9/9 · 9/9 · 9/9 · 3/3 · 3/3 |
-| Browser | the real page: table, filters, list, sharing, XSS, headers | `npm run smoke` | 32/32 |
+| Browser | the real page: table, filters, list, sharing, XSS, headers, promo page | `npm run smoke` | 37/37 |
 | Desktop | the packaged exe: local origin, embedded data, list persistence, blocked external navigation, print bridge | `npm run desktop:check` | 14/14 |
 
 If any gate falls, the site is not published: `npm run gate` chains all three web layers,
@@ -184,13 +185,13 @@ There is no `npm install` — there is nothing to install. PDF text needs `pdfto
 
 | | |
 |---|---|
-| File | `TercihPusula-win-x64-2026-1.zip` — 1.31 MB (contains `TercihPusula.exe`, 2.21 MB, plus a README.txt) |
+| File | `TercihPusula-win-x64-2026-1.zip` — 1.75 MB (contains `TercihPusula.exe`, 2.65 MB, plus a README.txt) |
 | Install | none: unzip anywhere (a path with spaces or Turkish characters is fine) and run the exe |
 | Requires | Windows 10/11 x64 + WebView2 Runtime (preinstalled on Windows 11) |
-| Data | 2026/1 term — 1,106 cadre rows, 139 pages |
-| sha256 | `a9b63ea9287d23be6c4ae0b45fba0ddc423e542a4d0528a776ad7b6d0daa2e9f` |
+| Data | 2026/1 term — 1,106 cadre rows, 140 pages |
+| sha256 | `6e820591bc30a8979185d28c4ad780096e741730d64a563bf684690986be54ce` |
 | Signature | **unsigned** — Smart App Control may block the first launch; choose "Run anyway" |
-| Version | 0.2.0 ([all releases](https://github.com/bahattinercan/tercihpusula/releases)) |
+| Version | 0.3.0 ([all releases](https://github.com/bahattinercan/tercihpusula/releases)) |
 
 `TercihPusula.exe` — portable, no installer, no network. It serves itself from a loopback listener.
 
@@ -202,7 +203,7 @@ npm run gate:desktop      # web gate + desktop build + desktop check
 
 | | |
 |---|---|
-| Runtime | .NET 11 WinForms + WebView2, single file (2.21 MB) |
+| Runtime | .NET 11 WinForms + WebView2, single file (2.65 MB) |
 | Content | `dist/` embedded in the exe, extracted to `%LOCALAPPDATA%\TercihPusula\app\<sha8>\` |
 | Origin | `http://127.0.0.1:47821` — loopback only, nothing reachable from another machine |
 | Data | 2026/1 snapshot; a new term means a new exe or a `data-override\` folder beside the exe |
@@ -281,7 +282,7 @@ her zaman güncel tercih kılavuzu ve `ais.osym.gov.tr`'dir.
 ### Windows için indir
 
 **[TercihPusula-win-x64-2026-1.zip](https://github.com/bahattinercan/tercihpusula/releases/latest)**
-· 1,31 MB · zip'i açın, `TercihPusula.exe`'ye çift tıklayın. Kurulum yok, kayıt defteri yok,
+· 1,75 MB · zip'i açın, `TercihPusula.exe`'ye çift tıklayın. Kurulum yok, kayıt defteri yok,
 yönetici hakkı yok, ağ yok.
 
 **İçindekiler** · [İndir](#windows-için-indir) · [Görünüm](#görünüm) · [Ne yapar](#ne-yapar) · [Nasıl çalışır](#nasıl-çalışır) ·
@@ -309,6 +310,8 @@ yönetici hakkı yok, ağ yok.
   paylaşılabilir bağlantı, kurulabilir PWA.
 - **Kadro dizini:** 52 unvan ve 81 il için ayrı sayfa; kontenjan, taban puan aralığı, geçen dönem boş
   kalan kadrolar.
+- **Tanıtım sayfası:** `/tanitim.html` — ne olduğu, ölçülen doğruluk, ekran görüntüleri, Windows
+  indirmesi ve sık sorulanlar tek sayfada.
 
 ## Nasıl çalışır
 
@@ -319,7 +322,7 @@ flowchart LR
   E --> PR[predict<br/>3 çapa + bant]
   B --> PR
   PR --> W[build.mjs]
-  W --> OUT[dist/<br/>139 statik sayfa + JSON]
+  W --> OUT[dist/<br/>140 statik sayfa + JSON]
   D --> GA[A–F kapıları]
   GA -.yayını durdurur.-> OUT
 ```
@@ -357,7 +360,7 @@ okundu: kontenjan, yerleşen ve taban puan alanlarında fark yok.
 |---|---|---|---|
 | Birim | parser, kapı, eligibility, tahmin | `npm test` | 38/38 |
 | Veri kapıları | A resmî toplam · B şema · C dönem farkı · D bağımsız kaynak · E tablo↔sonuç · F alan doğruluğu | `node pipeline/run.mjs gate` | 9/9 · 9/9 · 9/9 · 9/9 · 3/3 · 3/3 |
-| Tarayıcı | gerçek sayfa: tablo, süzgeç, liste, paylaşım, XSS, başlıklar | `npm run smoke` | 32/32 |
+| Tarayıcı | gerçek sayfa: tablo, süzgeç, liste, paylaşım, XSS, başlıklar, tanıtım sayfası | `npm run smoke` | 37/37 |
 | Masaüstü | paketlenmiş exe: yerel kaynak, gömülü veri, liste kalıcılığı, dış gezinme engeli, yazdırma köprüsü | `npm run desktop:check` | 14/14 |
 
 Kapılardan biri düşerse site yayımlanmaz: `npm run gate` üç web katmanını birlikte koşar,
@@ -367,7 +370,7 @@ Kapılardan biri düşerse site yayımlanmaz: `npm run gate` üç web katmanın�
 
 ```bash
 node pipeline/run.mjs all    # indir → ayrıştır → kılavuz → kapı → geri test → tahmin
-npm run build                # dist/ (139 statik sayfa)
+npm run build                # dist/ (140 statik sayfa)
 node web/serve.mjs 4174      # önizleme
 npm run gate                 # testler + tüm hat + build + tarayıcı kontrolü
 ```
@@ -396,13 +399,13 @@ verilebilir).
 
 | | |
 |---|---|
-| Dosya | `TercihPusula-win-x64-2026-1.zip` — 1,31 MB (içinde `TercihPusula.exe` 2,21 MB + README.txt) |
+| Dosya | `TercihPusula-win-x64-2026-1.zip` — 1,75 MB (içinde `TercihPusula.exe` 2,65 MB + README.txt) |
 | Kurulum | yok: zip'i herhangi bir klasöre açın (boşluklu veya Türkçe karakterli yol sorun değil), exe'yi çalıştırın |
 | Gereksinim | Windows 10/11 x64 + WebView2 Runtime (Windows 11'de kurulu gelir) |
-| Veri | 2026/1 dönemi — 1.106 kadro satırı, 139 sayfa |
-| sha256 | `a9b63ea9287d23be6c4ae0b45fba0ddc423e542a4d0528a776ad7b6d0daa2e9f` |
+| Veri | 2026/1 dönemi — 1.106 kadro satırı, 140 sayfa |
+| sha256 | `6e820591bc30a8979185d28c4ad780096e741730d64a563bf684690986be54ce` |
 | İmza | **imzasız** — Smart App Control ilk açılışı engelleyebilir; "Yine de çalıştır" seçin |
-| Sürüm | 0.2.0 ([tüm sürümler](https://github.com/bahattinercan/tercihpusula/releases)) |
+| Sürüm | 0.3.0 ([tüm sürümler](https://github.com/bahattinercan/tercihpusula/releases)) |
 
 `TercihPusula.exe` — taşınabilir, kurulum yok, ağ yok. İçeriği 127.0.0.1 dinleyicisinden sunar.
 
@@ -414,7 +417,7 @@ npm run gate:desktop      # web kapısı + masaüstü paket + masaüstü kontrol
 
 | | |
 |---|---|
-| Çalışma zamanı | .NET 11 WinForms + WebView2, tek dosya (2,21 MB) |
+| Çalışma zamanı | .NET 11 WinForms + WebView2, tek dosya (2,65 MB) |
 | İçerik | `dist/` exe içine gömülü, `%LOCALAPPDATA%\TercihPusula\app\<sha8>\` altına çıkarılır |
 | Kaynak | `http://127.0.0.1:47821` — yalnız geri döngü, başka makineden erişilemez |
 | Veri | 2026/1 anlık görüntüsü; yeni dönem = yeni exe veya exe yanında `data-override\` klasörü |

@@ -12,7 +12,7 @@ Decisions taken (user input, 2026-11-13):
 |---|---|
 | Packaging | **.NET 11 WinForms + WebView2** (SDK 11.0.100 and WebView2 runtime 157.0.4341.46 already installed) |
 | Data updates | **Packaged data only.** New round = rebuild + ship a new exe. No fetch/parse inside the app. |
-| Scope | **All 139 pages exactly as built** (`uygulama`, `kadrolar`, `bos-kalan-kadrolar`, `metodoloji`, `veri-kaynaklari`, index pages) |
+| Scope | **All 140 pages exactly as built** (`uygulama`, `kadrolar`, `bos-kalan-kadrolar`, `metodoloji`, `veri-kaynaklari`, index pages) |
 | Distribution | **Portable exe/zip.** No installer, no registry, no admin rights, no code signing |
 
 ## 2. Verified feasibility (probe results, not assumptions)
@@ -110,7 +110,7 @@ Optional (explicit approval needed): code signing, `tercihpusula://` deep links 
 5. In-app `/kadrolar/` navigation works (rewritten to `index.html`); clicking `https://ais.osym.gov.tr` opens the default browser and the app stays on the local page.
 6. Preference list (30 picks) survives app restart and re-extraction (stable origin).
 7. Second launch reuses the extracted folder (< 300 ms to navigation) and removes previous version folders.
-8. `npm run gate` unchanged and green (38 unit · gates A–F · 139 pages · 32 browser checks); the new `dist/data/*` output is byte-identical to today's.
+8. `npm run gate` unchanged and green (38 unit · gates A–F · 140 pages · 37 browser checks); the new `dist/data/*` output is byte-identical to today's.
 9. Portable zip runs from a path containing spaces and Turkish characters.
 
 ## 8. Verification commands

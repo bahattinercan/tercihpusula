@@ -78,7 +78,7 @@ Menu items are plain `ToolStripMenuItem`s built in `MainForm.BuildMenu()`; the r
 | `list-persist` | add → localStorage → reload → still there → clear |
 | `kadrolar-dizin` | the cadre index renders and its filters are present |
 | `dir-redirect` | `/kadrolar/` is redirected to `index.html` (WebView2 has no directory index) |
-| `sitemap` | 139 URLs are present in the bundle |
+| `sitemap` | 140 URLs are present in the bundle |
 | `no-external-resources` | browsing the app never requests an external host |
 | `external-blocked` | `location.href = https://…` is cancelled, origin unchanged |
 | `print-bridge` | `window.print()` reaches the host (native print dialog) |
