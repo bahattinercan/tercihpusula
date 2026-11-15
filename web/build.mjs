@@ -371,7 +371,11 @@ function main() {
       round,
       body: `<p class="kicker">KPSS <span id="round">${escapeHtml(round)}</span> · merkezî yerleştirme</p>
 <h1>Tercih listesi</h1>
-<p class="lede">Puan → program → filtre → liste. Liste tarayıcınızda saklanır, sunucuya gönderilmez.</p>
+<ol class="steps" id="steps">
+  <li id="step1"><span class="n">1</span><span class="t">Mezun olduğun programı seç</span></li>
+  <li id="step2"><span class="n">2</span><span class="t">KPSS puanını gir</span></li>
+  <li id="step3"><span class="n">3</span><span class="t">Yazabileceğin kadroları seç, listeyi kur</span></li>
+</ol>
 <div id="error" class="note" hidden></div>
 <form class="filters" id="filters" novalidate>
   <div class="field program-field">
@@ -386,7 +390,8 @@ function main() {
   <div class="field"><label for="level">öğrenim düzeyi</label>
     <select id="level"><option value="lisans">${LEVEL_LABEL.lisans}</option><option value="onlisans">${LEVEL_LABEL.onlisans}</option><option value="ortaogretim">${LEVEL_LABEL.ortaogretim}</option></select></div>
   <div class="field"><label for="puan">KPSS puanı</label>
-    <input id="puan" type="number" inputmode="decimal" step="0.00001" min="40" max="100" placeholder="82,45678" autocomplete="off"></div>
+    <input id="puan" type="number" inputmode="decimal" step="0.00001" min="40" max="100" placeholder="82,45678" autocomplete="off" aria-describedby="puanHelp">
+    <span id="puanHelp" class="hint">2026/1 KPSS sonucundaki puan (örn. 82,45678)</span></div>
   <div class="field"><label for="il">il</label><select id="il"></select></div>
   <div class="field"><label for="unvan">unvan</label><select id="unvan"></select></div>
   <div class="field"><label for="kurum">kurum</label><select id="kurum"></select></div>
@@ -403,10 +408,14 @@ function main() {
   <div class="stack">
     <div class="table-wrap">
       <table>
-        <thead><tr><th>kadro</th><th class="num">kont.</th><th class="num">geçen taban</th><th class="num">önceki dönemler</th><th class="num">tahmin</th><th>durum</th><th></th></tr></thead>
+        <thead><tr><th>kadro</th><th class="num">kont.</th><th class="num" title="Geçen dönemde bu kadro en düşük kaç puanla kapandı">geçen dönem tabanı</th><th class="num" title="Daha eski dönemlerde kapanış puanı aralığı (taban–tavan)">eski dönemler</th><th class="num" title="Bu dönem için modelin beklediği taban puan ve hata payı">beklenen taban</th><th>durum</th><th></th></tr></thead>
         <tbody id="rows"></tbody>
       </table>
     </div>
+    <p class="hint" id="chipLegend">Etiketler: <strong>beklenen taban yok</strong> = bu kadro için tahmin üretilmedi · <strong>boş kaldı</strong> = geçen dönem kimse yerleşmedi · <strong>şartı oku</strong> = sertifika/özel şart var, elle doğrula.</p>
+    <details class="howto"><summary>Bu tablo nasıl okunur?</summary>
+      <p><strong>geçen dönem tabanı</strong>: geçen yerleştirmede kadronun kapandığı en düşük puan (— ise kimse yerleşmedi). <strong>eski dönemler</strong>: daha eski dönemlerin taban–tavan aralığı; “+n” varsa döküm düğmesiyle açılır. <strong>beklenen taban</strong>: üç çapa (aynı kadro kodu, aynı kurum+unvan, il ortancası) ve ölçülen hata payıyla bu dönem için tahmin; garanti değildir. Ayrıntı: <a href="/metodoloji.html">metodoloji</a>.</p>
+    </details>
     <div id="emptyNote" class="note" hidden></div>
   </div>
   <aside class="card">

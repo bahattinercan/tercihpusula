@@ -202,6 +202,7 @@ function renderTable() {
     }
   }
   body.replaceChildren(frag);
+  renderSteps();
   $('#count').textContent = `${rows.length} satır${rows.length > MAX_ROWS ? ` (ilk ${MAX_ROWS} gösteriliyor, filtreyi daraltın)` : ''}`;
   renderEmptyNote(rows);
 }
@@ -232,9 +233,21 @@ function renderList() {
   const p = listProbability();
   const hasEstimate = state.list.length > 0 && state.puan !== null;
   $('#probabilityValue').textContent = hasEstimate ? `%${Math.round(p * 100)}` : '—';
-  $('#probability').textContent = hasEstimate ? 'tahmin · satır olasılıklarının birleşimi' : 'puan ve tercih girildikçe hesaplanır';
+  $('#probability').textContent = hasEstimate
+    ? listSentence()
+    : 'Puanını ve tercihlerini gir; listendeki her satır için tahmini tabanla karşılaştırıp yerleşme olasılığını gösterir.';
   $('#listMeta').textContent = `${state.list.length}/${MAX_TERCIH}`;
   save();
+}
+
+// Panelde çıplak yüzde yerine cümle: puanın liste içinde nerede durduğunu söyler.
+function listSentence() {
+  const rows = state.list.map((kod) => state.data.rows.find((row) => row.kod === kod)).filter(Boolean);
+  if (state.puan === null || !rows.length) return '';
+  const below = rows.filter((row) => row.tahmin?.puan !== null && row.tahmin?.puan !== undefined && row.tahmin.puan < state.puan).length;
+  const known = rows.filter((row) => row.tahmin?.puan !== null && row.tahmin?.puan !== undefined).length;
+  if (!known) return 'Listedeki satırlar için tahmin üretilmedi.';
+  return `Puanın ${fmt(state.puan)} · listedeki ${known} tahminin ${below} tanesi puanının altında.`;
 }
 
 function save() {
@@ -496,6 +509,18 @@ function applyProgramme() {
 }
 
 // Not: seçili programın kaç nitelik koduyla eşleştiği + "dolanlar" filtresinin alanla sınırlı olduğu.
+// 1-2-3 adımları: tamamlanan işaretlenir, sıradaki vurgulanır.
+function renderSteps() {
+  if (!document.getElementById('steps')) return;
+  const done = [Boolean(state.programKod), state.puan !== null, state.list.length > 0];
+  done.forEach((isDone, index) => {
+    const step = document.getElementById(`step${index + 1}`);
+    if (!step) return;
+    step.classList.toggle('done', isDone);
+    step.classList.toggle('next', done.slice(0, index).every(Boolean) && !isDone);
+  });
+}
+
 function renderProgrammeNote() {
   const note = $('#programNote');
   if (!note) return;
