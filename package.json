@@ -23,6 +23,6 @@
     "desktop:build": "node scripts/desktop-build.mjs",
     "desktop:check": "node scripts/desktop-check.mjs",
     "gate:desktop": "npm run gate && npm run desktop:build && npm run desktop:check",
-    "test:uygulama": "node web/uygulama-deep-test.mjs"
+    "test:uygulama": "node web/uygulama-deep.mjs"
   }
 }
