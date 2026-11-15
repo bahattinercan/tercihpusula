@@ -279,6 +279,267 @@
   },
   {
     "name": "A",
+    "round": "2025/4",
+    "level": "lisans",
+    "ok": true,
+    "totals": {
+      "kontenjan": 8634,
+      "yerlesen": 8634,
+      "bos": 0,
+      "rows": 1887
+    },
+    "official": {
+      "tercihYapan": 71211,
+      "kontenjan": 8634,
+      "yerlesen": 8634,
+      "bos": 0
+    },
+    "problems": []
+  },
+  {
+    "name": "B",
+    "round": "2025/4",
+    "level": "lisans",
+    "ok": true,
+    "problems": []
+  },
+  {
+    "name": "C",
+    "round": "2025/4",
+    "level": "lisans",
+    "ok": true,
+    "warnings": [
+      "EBE: kontenjan 6 → 1280",
+      "FİZYOTERAPİST: kontenjan 5 → 121",
+      "HEMŞİRE: kontenjan 107 → 6628"
+    ]
+  },
+  {
+    "name": "D",
+    "round": "2025/4",
+    "level": "lisans",
+    "ok": true,
+    "skipped": "round not covered by cross-source"
+  },
+  {
+    "name": "A",
+    "round": "2025/4",
+    "level": "onlisans",
+    "ok": true,
+    "totals": {
+      "kontenjan": 5199,
+      "yerlesen": 5199,
+      "bos": 0,
+      "rows": 2745
+    },
+    "official": {
+      "tercihYapan": 131148,
+      "kontenjan": 5199,
+      "yerlesen": 5199,
+      "bos": 0
+    },
+    "problems": []
+  },
+  {
+    "name": "B",
+    "round": "2025/4",
+    "level": "onlisans",
+    "ok": true,
+    "problems": []
+  },
+  {
+    "name": "C",
+    "round": "2025/4",
+    "level": "onlisans",
+    "ok": true,
+    "warnings": [
+      "TEKNİKER: kontenjan 163 → 235"
+    ]
+  },
+  {
+    "name": "D",
+    "round": "2025/4",
+    "level": "onlisans",
+    "ok": true,
+    "skipped": "round not covered by cross-source"
+  },
+  {
+    "name": "A",
+    "round": "2025/4",
+    "level": "ortaogretim",
+    "ok": true,
+    "totals": {
+      "kontenjan": 1509,
+      "yerlesen": 1509,
+      "bos": 0,
+      "rows": 633
+    },
+    "official": {
+      "tercihYapan": 25341,
+      "kontenjan": 1509,
+      "yerlesen": 1509,
+      "bos": 0
+    },
+    "problems": []
+  },
+  {
+    "name": "B",
+    "round": "2025/4",
+    "level": "ortaogretim",
+    "ok": true,
+    "problems": []
+  },
+  {
+    "name": "C",
+    "round": "2025/4",
+    "level": "ortaogretim",
+    "ok": true,
+    "warnings": [
+      "HEMŞİRE: kontenjan 36 → 969",
+      "TEKNİSYEN: kontenjan 91 → 273"
+    ]
+  },
+  {
+    "name": "D",
+    "round": "2025/4",
+    "level": "ortaogretim",
+    "ok": true,
+    "skipped": "round not covered by cross-source"
+  },
+  {
+    "name": "A",
+    "round": "2025/5",
+    "level": "lisans",
+    "ok": true,
+    "totals": {
+      "kontenjan": 7611,
+      "yerlesen": 7611,
+      "bos": 0,
+      "rows": 2149
+    },
+    "official": {
+      "tercihYapan": 85600,
+      "kontenjan": 7611,
+      "yerlesen": 7611,
+      "bos": 0
+    },
+    "problems": []
+  },
+  {
+    "name": "B",
+    "round": "2025/5",
+    "level": "lisans",
+    "ok": true,
+    "problems": []
+  },
+  {
+    "name": "C",
+    "round": "2025/5",
+    "level": "lisans",
+    "ok": true,
+    "warnings": [
+      "ÇOCUK GELİŞİMCİSİ: kontenjan 75 → 102",
+      "DİYETİSYEN: kontenjan 74 → 116",
+      "BÜRO PERSONELİ: kontenjan 215 → 290",
+      "PSİKOLOG: kontenjan 30 → 63",
+      "GERONTOLOG: kontenjan 6 → 8",
+      "BİYOLOG: kontenjan 10 → 15"
+    ]
+  },
+  {
+    "name": "D",
+    "round": "2025/5",
+    "level": "lisans",
+    "ok": true,
+    "skipped": "round not covered by cross-source"
+  },
+  {
+    "name": "A",
+    "round": "2025/5",
+    "level": "onlisans",
+    "ok": true,
+    "totals": {
+      "kontenjan": 6339,
+      "yerlesen": 6339,
+      "bos": 0,
+      "rows": 2982
+    },
+    "official": {
+      "tercihYapan": 134721,
+      "kontenjan": 6339,
+      "yerlesen": 6339,
+      "bos": 0
+    },
+    "problems": []
+  },
+  {
+    "name": "B",
+    "round": "2025/5",
+    "level": "onlisans",
+    "ok": true,
+    "problems": []
+  },
+  {
+    "name": "C",
+    "round": "2025/5",
+    "level": "onlisans",
+    "ok": true,
+    "warnings": [
+      "SAĞLIK TEKNİKERİ (ÇEVRE SAĞLIĞI): kontenjan 91 → 129",
+      "SAĞLIK TEKNİKERİ (TIBBİ SEKRETER): kontenjan 397 → 1370",
+      "SAĞLIK TEKNİKERİ (LABORATUVAR): kontenjan 294 → 439",
+      "SAĞLIK TEKNİKERİ (FİZİK TEDAVİ): kontenjan 62 → 120"
+    ]
+  },
+  {
+    "name": "D",
+    "round": "2025/5",
+    "level": "onlisans",
+    "ok": true,
+    "skipped": "round not covered by cross-source"
+  },
+  {
+    "name": "A",
+    "round": "2025/5",
+    "level": "ortaogretim",
+    "ok": true,
+    "totals": {
+      "kontenjan": 1297,
+      "yerlesen": 1297,
+      "bos": 0,
+      "rows": 606
+    },
+    "official": {
+      "tercihYapan": 21065,
+      "kontenjan": 1297,
+      "yerlesen": 1297,
+      "bos": 0
+    },
+    "problems": []
+  },
+  {
+    "name": "B",
+    "round": "2025/5",
+    "level": "ortaogretim",
+    "ok": true,
+    "problems": []
+  },
+  {
+    "name": "C",
+    "round": "2025/5",
+    "level": "ortaogretim",
+    "ok": true,
+    "warnings": []
+  },
+  {
+    "name": "D",
+    "round": "2025/5",
+    "level": "ortaogretim",
+    "ok": true,
+    "skipped": "round not covered by cross-source"
+  },
+  {
+    "name": "A",
     "round": "2026/1",
     "level": "lisans",
     "ok": true,
@@ -309,9 +570,8 @@
     "level": "lisans",
     "ok": true,
     "warnings": [
-      "AVUKAT: kontenjan 30 → 74",
-      "BİLGİSAYAR İŞLETMENİ: kontenjan 21 → 34",
-      "VETERİNER: kontenjan 12 → 18"
+      "MÜHENDİS: kontenjan 122 → 331",
+      "AVUKAT: kontenjan 50 → 74"
     ]
   },
   {
@@ -387,9 +647,7 @@
     "level": "onlisans",
     "ok": true,
     "warnings": [
-      "TEKNİKER: kontenjan 163 → 451",
-      "MEMUR: kontenjan 31 → 46",
-      "VERİ HAZIRLAMA VE KONTROL İŞLETMENİ: kontenjan 7 → 13"
+      "TEKNİKER: kontenjan 233 → 451"
     ]
   },
   {
@@ -463,10 +721,7 @@
     "round": "2026/1",
     "level": "ortaogretim",
     "ok": true,
-    "warnings": [
-      "VAGON TEKNİSYENİ: kontenjan 13 → 31",
-      "ŞOFÖR: kontenjan 5 → 15"
-    ]
+    "warnings": []
   },
   {
     "name": "D",

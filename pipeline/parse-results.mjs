@@ -39,8 +39,29 @@ export function splitKurum(raw) {
   return { kurum: parts.join(' / ') || null, il, teskilat };
 }
 
+// Uzun kurum adları hücreyi taşırıyor: satır iki fiziksel satıra bölünüyor, kurum adının kuyruğu
+// unvan hücresinin başına, "İL / TEŞKİLAT" ise unvanın içine düşüyor:
+//   kurum: "… ERDAL BAŞTAN ACİL SAĞLIK HİZMETLERİ"
+//   unvan: "İSTASYONU / TRABZON / TAŞRA SAĞLIK TEKNİKERİ (İLK VE ACİL YARDIM)"
+// İl boş kaldıysa bu desenden onarılır; kurum adı boşlukla yeniden birleştirilir.
+const WRAPPED_LOCATION = /^(.*?)\s\/\s([^/]+?)\s\/\s(MERKEZ|TAŞRA|DÖNER SERMAYE)\s+(.+)$/i;
+
+export function repairWrappedLocation(row) {
+  if (row.il || !row.unvan || !row.unvan.includes('/')) return row;
+  const match = row.unvan.match(WRAPPED_LOCATION);
+  if (!match) return row;
+  const [, prefix, il, teskilat, unvan] = match;
+  return {
+    ...row,
+    kurum: norm(`${row.kurum ?? ''} ${prefix}`),
+    il: norm(il.toUpperCase()),
+    teskilat: teskilat.toUpperCase(),
+    unvan: norm(unvan),
+  };
+}
+
 const isHeader = (line) =>
-  /Program Kodu|Sayısı\s+Sayısı|En Küçük\s+En Büyük|^Puan\s+Puan$|^KPSS-\d{4}/i.test(line.trim());
+  /Program Kodu|Sayısı\s+Sayısı|En Küçük\s+En Büyük|^Puan\s+Puan$|^KPSS-\d{4}|En Küçük ve En Büyük Puanlar/i.test(line.trim());
 
 /**
  * @param {string} text pdftotext -table output
@@ -96,20 +117,22 @@ export function parseResultsText(text) {
     if (!kurumRaw.includes('/')) noSeparator += 1;
 
     const { kurum, il, teskilat } = splitKurum(kurumRaw);
-    rows.push({
-      kod: codeMatch[1],
-      // hücre içi çift boşluk (justified metin) tek boşluğa indirilir: aksi halde
-      // aynı unvan sözlükte iki ayrı ad olarak görünür
-      kurum: norm(kurum),
-      il: norm(il),
-      teskilat,
-      unvan: norm(unvan),
-      kontenjan: Number(ints[0]),
-      yerlesen: Number(ints[1]),
-      bosKalan: Number(ints[2]),
-      minPuan: toScore(scores[0]),
-      maxPuan: toScore(scores[1]),
-    });
+    rows.push(
+      repairWrappedLocation({
+        kod: codeMatch[1],
+        // hücre içi çift boşluk (justified metin) tek boşluğa indirilir: aksi halde
+        // aynı unvan sözlükte iki ayrı ad olarak görünür
+        kurum: norm(kurum),
+        il: norm(il),
+        teskilat,
+        unvan: norm(unvan),
+        kontenjan: Number(ints[0]),
+        yerlesen: Number(ints[1]),
+        bosKalan: Number(ints[2]),
+        minPuan: toScore(scores[0]),
+        maxPuan: toScore(scores[1]),
+      }),
+    );
   }
 
   const codes = new Set(rows.map((r) => r.kod));

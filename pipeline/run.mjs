@@ -22,6 +22,14 @@ const ONLY = (process.argv.find((a) => a.startsWith('--only=')) ?? '').slice('--
 
 const sha256 = (bytes) => createHash('sha256').update(bytes).digest('hex');
 
+// "KPSS-2025/5: Sağlık Bakanlığının Sözleşmeli Sağlık Personeli …" → "Sağlık Bakanlığı".
+// Kurum adı sayfanın kanal başlığı olarak kullanılır; eşleşmezse tam başlık kalır.
+const channelTitle = (title) => {
+  const body = title.replace(/^KPSS-\d{4}\/\d+:\s*/, '').trim();
+  const match = body.match(/^(.+?)(?:nın|nin|nun|nün)\s/);
+  return match ? match[1] : body;
+};
+
 const loadGuideFallback = () => {
   const file = join(ROOT, 'data', 'reference', 'guide-docs.json');
   return existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : {};
@@ -46,7 +54,18 @@ async function cmdFetch() {
       log(`  ${key}: no level documents found, skipping`);
       continue;
     }
-    const manifest = { round: entry.round, landing: entry.url, title: entry.title, docs: {}, guide: {} };
+    const manifest = {
+      round: entry.round,
+      landing: entry.url,
+      title: entry.title,
+      // Kanal: merkezî yerleştirme mi, yoksa tek kurumun sözleşmeli alımı mı?
+      // Aynı ilan dönemi numarası iki ayrı kanalı gösterdiği için (2025/2 merkezî,
+      // 2025/5 Sağlık Bakanlığı) dönem geçmişi kanal içinde tutulmalı.
+      channel: entry.central ? 'merkezi' : 'kurum',
+      channelTitle: entry.central ? 'Merkezî yerleştirme (ÖSYM)' : channelTitle(entry.title),
+      docs: {},
+      guide: {},
+    };
     if (summary) manifest.summary = summary;
     const targets = [...Object.entries(levels), ...(summary ? [['summary', summary]] : [])];
     for (const [level, url] of targets) {
@@ -93,7 +112,14 @@ function cmdParse() {
     const manifest = JSON.parse(readFileSync(join(RAW, key, 'manifest.json'), 'utf8'));
     const outDir = join(ROUNDS, key);
     mkdirSync(outDir, { recursive: true });
-    const meta = { round: manifest.round, landing: manifest.landing, parser: 'parse-results@1', levels: {} };
+    const meta = {
+      round: manifest.round,
+      landing: manifest.landing,
+      parser: 'parse-results@1',
+      channel: manifest.channel ?? 'merkezi',
+      channelTitle: manifest.channelTitle ?? 'Merkezî yerleştirme (ÖSYM)',
+      levels: {},
+    };
     for (const level of LEVELS) {
       const pdfPath = join(RAW, key, `${level}.pdf`);
       if (!existsSync(pdfPath)) continue;
@@ -242,20 +268,30 @@ async function cmdGate() {
   log('all gates passed');
 }
 
-function loadRounds() {
+// Yalnız merkezî yerleştirme dönemleri: kurum alımları (Sağlık Bakanlığı, MEB …) ayrı kanaldır,
+// tahmin/geri test modeline karışırsa "geçen dönem aynı kadro" eşleşmesi yanlış puan üretir.
+function loadRounds({ channel = 'merkezi' } = {}) {
   const keys = readdirSync(ROUNDS)
-    .filter((k) => /^\d{4}-\d$/.test(k))
+    .filter((k) => /^\d{4}-\d+$/.test(k))
     .sort();
-  return keys.map((key) => ({
-    key,
-    round: key.replace('-', '/'),
-    levels: Object.fromEntries(
-      LEVELS.map((level) => {
-        const file = join(ROUNDS, key, `${level}.json`);
-        return [level, existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')).rows : null];
-      }).filter(([, rows]) => rows),
-    ),
-  }));
+  return keys
+    .map((key) => {
+      const metaFile = join(ROUNDS, key, 'meta.json');
+      const meta = existsSync(metaFile) ? JSON.parse(readFileSync(metaFile, 'utf8')) : {};
+      return {
+        key,
+        round: meta.round ?? key.replace('-', '/'),
+        channel: meta.channel ?? 'merkezi',
+        levels: Object.fromEntries(
+          LEVELS.map((level) => {
+            const file = join(ROUNDS, key, `${level}.json`);
+            return [level, existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')).rows : null];
+          }).filter(([, rows]) => rows),
+        ),
+      };
+    })
+    .filter((entry) => channel === 'all' || entry.channel === channel)
+    .filter((entry) => Object.keys(entry.levels).length > 0);
 }
 
 /** Rolling-origin backtest -> data/rounds/backtest.json (published on /metodoloji). */

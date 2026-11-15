@@ -1,0 +1,42 @@
+{
+  "round": "2025/4",
+  "landing": "https://www.osym.gov.tr/kpss20254-saglik-bakanliginin-sozlesmeli-saglik-personeli-pozisyonlari-yerlestirme-sonuclarina-iliskin-sayisal-bilgiler",
+  "parser": "parse-results@1",
+  "channel": "kurum",
+  "channelTitle": "Sağlık Bakanlığı",
+  "levels": {
+    "lisans": {
+      "parsed": 1887,
+      "uniqueCodes": 1887,
+      "rejectedLines": 0,
+      "kurumWithoutSeparator": 0,
+      "rejectedSample": [],
+      "rows": 1887,
+      "kontenjan": 8634,
+      "yerlesen": 8634,
+      "bosKalan": 0
+    },
+    "onlisans": {
+      "parsed": 2745,
+      "uniqueCodes": 2745,
+      "rejectedLines": 0,
+      "kurumWithoutSeparator": 1,
+      "rejectedSample": [],
+      "rows": 2745,
+      "kontenjan": 5199,
+      "yerlesen": 5199,
+      "bosKalan": 0
+    },
+    "ortaogretim": {
+      "parsed": 633,
+      "uniqueCodes": 633,
+      "rejectedLines": 0,
+      "kurumWithoutSeparator": 0,
+      "rejectedSample": [],
+      "rows": 633,
+      "kontenjan": 1509,
+      "yerlesen": 1509,
+      "bosKalan": 0
+    }
+  }
+}

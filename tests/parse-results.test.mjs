@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { parseResultsText, splitKurum } from '../pipeline/parse-results.mjs';
+import { parseResultsText, splitKurum, repairWrappedLocation } from '../pipeline/parse-results.mjs';
 import { parseSummaryText } from '../pipeline/parse-summary.mjs';
 
 const line = (...parts) => parts.join('\n');
@@ -87,4 +87,27 @@ test('parses the official summary table despite justified text', () => {
   assert.deepEqual(levels.lisans, { tercihYapan: 104148, kontenjan: 977, yerlesen: 976, bos: 1 });
   assert.deepEqual(levels.onlisans, { tercihYapan: 70990, kontenjan: 828, yerlesen: 828, bos: 0 });
   assert.deepEqual(levels.toplam, { tercihYapan: 249297, kontenjan: 2083, yerlesen: 2082, bos: 1 });
+});
+
+test('repairs the location that wrapped into the job-title cell', () => {
+  // Sağlık Bakanlığı 2025/5 ve 2025/4 dosyalarında uzun kurum adları iki satıra bölünüyor:
+  // kurum adının kuyruğu unvan hücresine, "İL / TEŞKİLAT" unvanın içine düşüyor.
+  const wrapped = repairWrappedLocation({
+    kod: '205027223',
+    kurum: 'ORDU ÇATALPINAR JANDARMA ER ŞÜKRÜ GELİR TOPLUM SAĞLIĞI MERKEZİ (ÇATALPINAR İLÇE DEVLET',
+    il: null,
+    teskilat: null,
+    unvan: 'HASTANESİ) / ORDU / TAŞRA SAĞLIK TEKNİKERİ (LABORATUVAR)',
+  });
+  assert.equal(wrapped.il, 'ORDU');
+  assert.equal(wrapped.teskilat, 'TAŞRA');
+  assert.equal(wrapped.unvan, 'SAĞLIK TEKNİKERİ (LABORATUVAR)');
+  assert.equal(
+    wrapped.kurum,
+    'ORDU ÇATALPINAR JANDARMA ER ŞÜKRÜ GELİR TOPLUM SAĞLIĞI MERKEZİ (ÇATALPINAR İLÇE DEVLET HASTANESİ)',
+  );
+
+  // Zaten ili olan satıra dokunulmaz.
+  const intact = { kod: 'x', kurum: 'A', il: 'ANKARA', teskilat: 'MERKEZ', unvan: 'MEMUR' };
+  assert.deepEqual(repairWrappedLocation(intact), intact);
 });

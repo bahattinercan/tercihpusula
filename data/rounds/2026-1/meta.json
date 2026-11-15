@@ -2,6 +2,8 @@
   "round": "2026/1",
   "landing": "https://www.osym.gov.tr/kpss-20261-bazi-kamu-kurum-ve-kuruluslarin-kadro-ve-pozisyonlarina-yerlestirme-sonuclarina-iliskin-sayisal-bilgiler",
   "parser": "parse-results@1",
+  "channel": "merkezi",
+  "channelTitle": "Merkezî yerleştirme (ÖSYM)",
   "levels": {
     "lisans": {
       "parsed": 555,

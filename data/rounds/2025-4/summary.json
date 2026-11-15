@@ -1,0 +1,29 @@
+{
+  "round": "2025/4",
+  "levels": {
+    "lisans": {
+      "tercihYapan": 71211,
+      "kontenjan": 8634,
+      "yerlesen": 8634,
+      "bos": 0
+    },
+    "onlisans": {
+      "tercihYapan": 131148,
+      "kontenjan": 5199,
+      "yerlesen": 5199,
+      "bos": 0
+    },
+    "ortaogretim": {
+      "tercihYapan": 25341,
+      "kontenjan": 1509,
+      "yerlesen": 1509,
+      "bos": 0
+    },
+    "toplam": {
+      "tercihYapan": 227700,
+      "kontenjan": 15342,
+      "yerlesen": 15342,
+      "bos": 0
+    }
+  }
+}
