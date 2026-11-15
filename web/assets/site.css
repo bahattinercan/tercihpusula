@@ -191,18 +191,35 @@ p { margin: 8px 0; max-width: 64ch; color: var(--ink-soft); }
 .note strong { color: var(--ink); }
 
 /* ---------- form ---------- */
-.filters { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(128px, 1fr)); align-items: start; }
-.filters > div { min-width: 0; }
-.filters .full { grid-column: 1 / -1; }
-/* program: arama kutusu + seçim tek satırda; dar ekranda alt alta düşer */
-.program-row { display: flex; gap: 8px; align-items: center; }
-.program-row #programSearch { flex: 0 1 20rem; min-width: 0; }
-.program-row #program { flex: 1 1 auto; min-width: 0; }
-.program-row .count { flex: 0 0 auto; white-space: nowrap; }
-@media (max-width: 640px) {
-  .program-row { flex-wrap: wrap; }
-  .program-row #programSearch, .program-row #program { flex: 1 1 100%; }
+/* Filtreler tek satır: alanlar paylaşılan genişliği oransal böler (program 2.6 kat),
+   900px altında satır sarmaya izin verir — altı kontrolü sıkıştırmak okunmaz hale geliyor. */
+.filters { display: flex; flex-wrap: nowrap; gap: 8px; align-items: flex-start; }
+.filters > .field { flex: 1 1 0; min-width: 0; }
+.filters .program-field { flex-grow: 2.6; }
+.filters select, .filters input { min-width: 0; }
+@media (max-width: 900px) {
+  .filters { flex-wrap: wrap; }
+  .filters > .field { flex: 1 1 132px; }
+  .filters .program-field { flex: 1 1 100%; }
 }
+/* program: tek dropdown, liste kutusu kontrolün altına açılır */
+.combo { position: relative; }
+.combo input { width: 100%; }
+#programList {
+  position: absolute; z-index: 30; inset-inline: 0; top: calc(100% + 4px);
+  max-height: 280px; overflow: auto; margin: 0; padding: 4px; list-style: none;
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg);
+  box-shadow: 0 10px 28px light-dark(rgba(12, 26, 30, 0.16), rgba(0, 0, 0, 0.5));
+}
+#programList [role='option'] { padding: 6px 8px; border-radius: var(--radius); cursor: pointer; font-size: 13px; }
+#programList [role='option']:hover { background: var(--surface-2); }
+#programList [role='option'].active { background: var(--surface-2); outline: 1px solid var(--accent); }
+#programList [aria-selected='true'] { font-weight: 600; }
+.combo-note {
+  padding: 4px 8px 6px; color: var(--ink-soft); cursor: default;
+  font: 400 11px/1.3 var(--font-mono); letter-spacing: 0.12em; text-transform: uppercase;
+}
+#programNote { margin-block: 4px 8px; }
 label { display: block; font: 500 11px/1.3 var(--font-mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-soft); margin-block-end: 4px; }
 input, select, button { font: inherit; }
 input[type='number'], input[type='search'], input[type='text'], select {

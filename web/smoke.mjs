@@ -172,7 +172,7 @@ async function main() {
     if (rowCount === 0) {
       const diag = await evaluate(
         client,
-        "JSON.stringify({error: document.querySelector('#error').textContent, hidden: document.querySelector('#error').hidden, count: document.querySelector('#count').textContent, options: document.querySelector('#program').options.length})",
+        "JSON.stringify({error: document.querySelector('#error').textContent, hidden: document.querySelector('#error').hidden, count: document.querySelector('#count').textContent, programmeOptions: document.querySelectorAll('#programList [role=option]').length})",
       );
       process.stderr.write(`  tanı: ${diag}
 `);
@@ -218,22 +218,26 @@ async function main() {
     const after = await evaluate(client, "document.querySelectorAll('#rows tr').length");
     check('il filtresi satırları daraltıyor', after > 0 && after <= before, `${before} → ${after}`);
 
-    // program seçimi yazılabilirlik sayısını daraltmalı
+    // program seçimi yazılabilirlik sayısını daraltmalı (tek dropdown, içinde arama)
     await evaluate(client, "document.querySelector('#il').value=''; document.querySelector('#il').dispatchEvent(new Event('change'))");
     const totalRows = await evaluate(client, "document.querySelectorAll('#rows tr').length");
     const programLabel = await evaluate(client, `(() => {
-      const select = document.querySelector('#program');
-      const option = [...select.options].find((o) => o.value && o.textContent.trim().length > 6);
-      if (!option) return null;
-      select.value = option.value;
-      select.dispatchEvent(new Event('change'));
-      return option.textContent.trim();
+      const input = document.querySelector('#programSearch');
+      input.focus();
+      input.value = 'mühendis';
+      input.dispatchEvent(new Event('input'));
+      const first = document.querySelector('#programList [role="option"]');
+      if (!first) return null;
+      const label = first.textContent.trim();
+      first.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
+      return label;
     })()`);
     await sleep(200);
     const programRows = await evaluate(client, "document.querySelectorAll('#rows tr').length");
+    const programChosen = await evaluate(client, "document.querySelector('#programSearch').value");
     check(
       'program filtresi uygulanıyor',
-      programLabel !== null && programRows > 0 && programRows < totalRows,
+      programLabel !== null && programRows > 0 && programRows < totalRows && programChosen === programLabel,
       `${totalRows} → ${programRows} satır · ${programLabel ?? 'program seçilemedi'}`,
     );
 
@@ -244,7 +248,7 @@ async function main() {
     const clearAllFilters = async () => {
       await evaluate(
         client,
-        "(() => { const q = document.querySelector('#query'); q.value = ''; q.dispatchEvent(new Event('input')); for (const id of ['#il', '#unvan', '#kurum', '#program']) { const s = document.querySelector(id); s.value = ''; s.dispatchEvent(new Event('change')); } const w = document.querySelector('#onlyWritable'); w.checked = false; w.dispatchEvent(new Event('change')); })()",
+        "(() => { const q = document.querySelector('#query'); q.value = ''; q.dispatchEvent(new Event('input')); for (const id of ['#il', '#unvan', '#kurum']) { const s = document.querySelector(id); s.value = ''; s.dispatchEvent(new Event('change')); } const p = document.querySelector('#programSearch'); p.value = ''; p.dispatchEvent(new Event('input')); p.blur(); const w = document.querySelector('#onlyWritable'); w.checked = false; w.dispatchEvent(new Event('change')); })()",
       );
       await sleep(200);
     };
@@ -295,19 +299,28 @@ async function main() {
     await gotoLevel('lisans');
     await evaluate(
       client,
-      "(() => { const i = document.querySelector('#programSearch'); i.value = 'hemsire'; i.dispatchEvent(new Event('input')); })()",
+      "(() => { const i = document.querySelector('#programSearch'); i.focus(); i.value = 'hemsire'; i.dispatchEvent(new Event('input')); })()",
     );
-    await sleep(200);
+    await sleep(250);
     const programFound = await evaluate(
       client,
-      "(() => { const s = document.querySelector('#program'); const hit = [...s.options].find((o) => o.value && o.textContent.trim() === 'HEMŞİRELİK'); return JSON.stringify({ hit: hit ? hit.value : null, options: s.options.length, note: document.querySelector('#programMatch').textContent }); })()",
+      `(() => {
+        const options = [...document.querySelectorAll('#programList [role="option"]')];
+        const hit = options.find((o) => o.textContent.trim() === 'HEMŞİRELİK');
+        const note = document.querySelector('#programList .combo-note')?.textContent ?? '';
+        const expanded = document.querySelector('#programSearch').getAttribute('aria-expanded');
+        if (hit) hit.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
+        return JSON.stringify({ kod: hit ? hit.dataset.kod : null, options: options.length, note, expanded, chosen: document.querySelector('#programSearch').value, rows: document.querySelectorAll('#rows tr').length });
+      })()`,
     );
     const parsedProgram = JSON.parse(programFound);
     check(
-      'program arama kutusu HEMŞİRELİK programını buluyor (tek harfli optgroup çökmesi yok)',
-      parsedProgram.hit === '3204' && parsedProgram.options < 20 && /eşleşti/.test(parsedProgram.note),
-      `${parsedProgram.note} · seçenek ${parsedProgram.options} · kod ${parsedProgram.hit}`,
+      'program arama HEMŞİRELİK seçeneğini bulup seçiyor (arama dropdown içinde)',
+      parsedProgram.kod === '3204' && parsedProgram.options < 20 && parsedProgram.options > 0 && parsedProgram.expanded === 'true' && parsedProgram.chosen === 'HEMŞİRELİK' && parsedProgram.rows > 0,
+      `${parsedProgram.note || 'not yok'} · seçenek ${parsedProgram.options} · kod ${parsedProgram.kod} · ${parsedProgram.rows} satır`,
     );
+    const comboClosed = await evaluate(client, "document.querySelector('#programList').hidden");
+    check('seçimden sonra liste kapanıyor', comboClosed === true);
     await clearAllFilters();
 
     // --- geçmiş dönem dökümü: "geçmiş dönemde dolanlar" + taban–tavan hücresi + döküm satırı

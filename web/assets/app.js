@@ -238,24 +238,88 @@ function syncUrl() {
   if (share) share.value = `${location.origin}${location.pathname}?${next}`;
 }
 
-// Program listesi: eskiden `p.a[0]` ile gruplanıyordu ama `a` bir dizi değil metin; 1269
-// program tek harfli optgroup'lara (A, H, İ…) dağılıp bulunamaz hale geliyordu. Şimdi düz,
-// Türkçe sıralı ve katlanmış arama ile süzülmüş bir liste.
-function renderProgrammes() {
-  const select = $('#program');
+// Program seçici: tek dropdown, içinde arama.
+// Eski hâli iki ayrı alandı (arama kutusu + select). Şimdi ARIA combobox: yazdıkça liste süzülür,
+// ok tuşları gezer, Enter seçer, Esc kapatır; seçim state.programKod'da tutulur.
+const COMBO_LIMIT = 60;
+
+function programmeMatches(needle) {
   const all = state.data?.programmes ?? [];
-  const needle = foldTr(state.programSearch);
-  const items = all
-    .filter((p) => !needle || foldTr(p.a).includes(needle))
-    .sort((a, b) => a.a.localeCompare(b.a, 'tr'));
-  const chosen = state.programKod ? all.find((p) => String(p.k) === String(state.programKod)) : null;
-  const list = chosen && !items.includes(chosen) ? [chosen, ...items] : items;
-  select.innerHTML =
-    `<option value="">Mezun olduğunuz programı seçin (${all.length})</option>` +
-    list.map((p) => `<option value="${p.k}">${esc(p.a)}</option>`).join('');
-  if (chosen) select.value = String(chosen.k);
-  const match = $('#programMatch');
-  if (match) match.textContent = needle ? `${list.length} program eşleşti` : '';
+  const key = foldTr(needle);
+  return (key ? all.filter((p) => foldTr(p.a).includes(key)) : all).sort((a, b) => a.a.localeCompare(b.a, 'tr'));
+}
+
+function setComboOpen(open) {
+  const input = $('#programSearch');
+  const list = $('#programList');
+  if (!input || !list) return;
+  list.hidden = !open;
+  input.setAttribute('aria-expanded', String(open));
+  if (!open) {
+    state.comboActive = -1;
+    input.removeAttribute('aria-activedescendant');
+  }
+}
+
+function comboOpen() {
+  const list = $('#programList');
+  return Boolean(list) && !list.hidden;
+}
+
+/** Listeyi yazar; `open` verilirse odağı ilk eşleşmeye alır. */
+function renderProgrammes({ open = false } = {}) {
+  const list = $('#programList');
+  if (!list) return;
+  const matches = programmeMatches(state.programSearch);
+  const shown = matches.slice(0, COMBO_LIMIT);
+  const chosenKod = state.programKod ? String(state.programKod) : null;
+  state.comboMatches = shown;
+  list.innerHTML =
+    `<li class="combo-note" role="presentation">${matches.length} program${matches.length > COMBO_LIMIT ? ` · ilk ${COMBO_LIMIT} gösteriliyor` : ''}</li>` +
+    shown
+      .map(
+        (p, index) =>
+          `<li role="option" id="program-option-${index}" data-kod="${p.k}" aria-selected="${String(p.k) === chosenKod}">${esc(p.a)}</li>`,
+      )
+      .join('');
+  if (open) {
+    setComboOpen(true);
+    // "Seçili" satır varsa ondan başla, yoksa ilk eşleşmeden.
+    const start = shown.findIndex((p) => String(p.k) === chosenKod);
+    highlightCombo(start >= 0 ? start : 0);
+  } else if (comboOpen()) {
+    highlightCombo(state.comboActive ?? -1);
+  }
+}
+
+function highlightCombo(index) {
+  const list = $('#programList');
+  const input = $('#programSearch');
+  if (!list || !input) return;
+  const options = [...list.querySelectorAll('[role="option"]')];
+  if (!options.length) {
+    state.comboActive = -1;
+    input.removeAttribute('aria-activedescendant');
+    return;
+  }
+  const next = Math.max(0, Math.min(index, options.length - 1));
+  state.comboActive = next;
+  for (const [i, option] of options.entries()) option.classList.toggle('active', i === next);
+  const active = options[next];
+  input.setAttribute('aria-activedescendant', active.id);
+  active.scrollIntoView({ block: 'nearest' });
+}
+
+function chooseProgramme(kod) {
+  const programme = state.data?.programmes.find((p) => String(p.k) === String(kod)) ?? null;
+  state.programKod = programme ? programme.k : null;
+  state.programSearch = programme ? programme.a : '';
+  $('#programSearch').value = state.programSearch;
+  setComboOpen(false);
+  renderProgrammes();
+  applyProgramme();
+  renderTable();
+  syncUrl();
 }
 
 const LEVEL_NAME = { lisans: 'lisans', onlisans: 'ön lisans', ortaogretim: 'lise' };
@@ -268,6 +332,12 @@ function clearFilters() {
   state.il = '';
   state.unvan = '';
   state.kurum = '';
+  state.programKod = null;
+  state.programSearch = '';
+  $('#programSearch').value = '';
+  setComboOpen(false);
+  renderProgrammes();
+  applyProgramme();
   state.onlyWritable = false;
   state.onlyEmpty = false;
   state.onlyFilled = false;
@@ -399,8 +469,10 @@ function applyProgramme() {
     $('#programNote').textContent = known
       ? `${codes.length} nitelik kodu bu programla eşleşiyor.`
       : 'Bu program kılavuzda bulunamadı.';
+    $('#programNote').hidden = false;
   } else {
     $('#programNote').textContent = '';
+    $('#programNote').hidden = true;
   }
 }
 
@@ -417,6 +489,11 @@ async function loadLevel(level) {
     state.list = [];
   }
   $('#round').textContent = state.data.round;
+  if (state.programKod) {
+    const chosen = state.data.programmes.find((p) => p.k === state.programKod);
+    if (chosen) state.programSearch = chosen.a;
+    $('#programSearch').value = state.programSearch;
+  }
   renderProgrammes();
   fillSelects();
   applyProgramme();
@@ -440,12 +517,6 @@ function bind() {
     syncUrl();
   });
   $('#level').addEventListener('change', (event) => loadLevel(event.target.value).catch(showError));
-  $('#program').addEventListener('change', (event) => {
-    state.programKod = event.target.value ? Number(event.target.value) : null;
-    applyProgramme();
-    renderTable();
-    syncUrl();
-  });
   for (const [id, field] of [['#il', 'il'], ['#unvan', 'unvan'], ['#kurum', 'kurum']]) {
     $(id).addEventListener('change', (event) => {
       state[field] = event.target.value;
@@ -470,7 +541,54 @@ function bind() {
   });
   $('#programSearch').addEventListener('input', (event) => {
     state.programSearch = event.target.value;
-    renderProgrammes();
+    // Seçili programın adı değiştirildiyse seçim düşer: yazılan metin artık o program değil.
+    const chosen = state.programKod ? state.data?.programmes.find((p) => p.k === state.programKod) : null;
+    if (chosen && event.target.value.trim() !== chosen.a) {
+      state.programKod = null;
+      applyProgramme();
+      renderTable();
+      syncUrl();
+    }
+    renderProgrammes({ open: true });
+  });
+  $('#programSearch').addEventListener('keydown', (event) => {
+    const open = comboOpen();
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      if (!open) {
+        renderProgrammes({ open: true });
+        return;
+      }
+      const step = event.key === 'ArrowDown' ? 1 : -1;
+      highlightCombo((state.comboActive ?? -1) + step);
+      return;
+    }
+    if (event.key === 'Enter') {
+      if (!open) return;
+      event.preventDefault();
+      const picked = state.comboMatches?.[state.comboActive ?? 0];
+      if (picked) chooseProgramme(picked.k);
+      return;
+    }
+    if (event.key === 'Escape') {
+      if (!open) return;
+      event.preventDefault();
+      setComboOpen(false);
+    }
+  });
+  $('#programSearch').addEventListener('blur', () => setComboOpen(false));
+  // Tıklama/odak listeyi açar; ayrı ▾ düğmesi yok (tarayıcının kendi temizleme ×'i ile çakışıyordu).
+  $('#programSearch').addEventListener('focus', () => renderProgrammes({ open: true }));
+  $('#programSearch').addEventListener('click', () => {
+    if (!comboOpen()) renderProgrammes({ open: true });
+  });
+  $('#programList').addEventListener('mousedown', (event) => {
+    // mousedown: blur'dan önce yakala, aksi halde liste kapanıp tıklama kaybolur.
+    const option = event.target.closest('[role="option"]');
+    if (!option) return;
+    event.preventDefault();
+    chooseProgramme(option.dataset.kod);
+    $('#programSearch').focus();
   });
   $('#clear').addEventListener('click', () => {
     state.list = [];
@@ -496,11 +614,7 @@ function bind() {
     }
     const pickProgram = event.target.closest('[data-program]');
     if (pickProgram) {
-      state.programKod = Number(pickProgram.dataset.program);
-      $('#program').value = String(state.programKod);
-      applyProgramme();
-      renderTable();
-      syncUrl();
+      chooseProgramme(Number(pickProgram.dataset.program));
       return;
     }
     const histo = event.target.closest('[data-histo]');

@@ -337,21 +337,24 @@ function main() {
 <p class="lede">Puan → program → filtre → liste. Liste tarayıcınızda saklanır, sunucuya gönderilmez.</p>
 <div id="error" class="note" hidden></div>
 <form class="filters" id="filters" novalidate>
-  <div class="full"><label for="program">mezun olduğunuz program</label>
-    <div class="program-row">
-      <input id="programSearch" type="search" placeholder="program ara: hemşirelik, mühendis, büro…" autocomplete="off" aria-label="program ara">
-      <select id="program"></select>
-      <span id="programMatch" class="count" aria-live="polite"></span>
+  <div class="field program-field">
+    <label for="programSearch" id="programLabel">mezun olduğunuz program</label>
+    <div class="combo" id="programCombo">
+      <input id="programSearch" type="search" autocomplete="off" role="combobox"
+        aria-expanded="false" aria-controls="programList" aria-autocomplete="list"
+        aria-labelledby="programLabel" placeholder="program ara: hemşirelik, ebelik…">
+      <ul id="programList" role="listbox" aria-labelledby="programLabel" hidden></ul>
     </div>
-    <div id="programNote" class="hint" style="margin-top:4px"></div></div>
-  <div><label for="level">öğrenim düzeyi</label>
+  </div>
+  <div class="field"><label for="level">öğrenim düzeyi</label>
     <select id="level"><option value="lisans">${LEVEL_LABEL.lisans}</option><option value="onlisans">${LEVEL_LABEL.onlisans}</option><option value="ortaogretim">${LEVEL_LABEL.ortaogretim}</option></select></div>
-  <div><label for="puan">KPSS puanı</label>
+  <div class="field"><label for="puan">KPSS puanı</label>
     <input id="puan" type="number" inputmode="decimal" step="0.00001" min="40" max="100" placeholder="82,45678" autocomplete="off"></div>
-  <div><label for="il">il</label><select id="il"></select></div>
-  <div><label for="unvan">unvan</label><select id="unvan"></select></div>
-  <div><label for="kurum">kurum</label><select id="kurum"></select></div>
+  <div class="field"><label for="il">il</label><select id="il"></select></div>
+  <div class="field"><label for="unvan">unvan</label><select id="unvan"></select></div>
+  <div class="field"><label for="kurum">kurum</label><select id="kurum"></select></div>
 </form>
+<p id="programNote" class="hint" hidden></p>
 <div class="toolbar">
   <label><input type="checkbox" id="onlyWritable" checked> sadece yazabileceklerim</label>
   <label><input type="checkbox" id="onlyEmpty"> geçen dönem boş kalanlar</label>
