@@ -1,0 +1,30 @@
+{
+  "round": "2024/7",
+  "level": "lisans",
+  "rows": [
+    {
+      "kod": "307010101",
+      "kurum": "KENTSEL DÖNÜŞÜM BAŞKANLIĞI",
+      "il": "ANKARA",
+      "teskilat": "MERKEZ",
+      "unvan": "BÜRO PERSONELİ",
+      "kontenjan": 25,
+      "yerlesen": 25,
+      "bosKalan": 0,
+      "minPuan": 84.99958,
+      "maxPuan": 90.20155
+    },
+    {
+      "kod": "307010108",
+      "kurum": "KENTSEL DÖNÜŞÜM BAŞKANLIĞI",
+      "il": "ANKARA",
+      "teskilat": "MERKEZ",
+      "unvan": "BÜRO PERSONELİ",
+      "kontenjan": 5,
+      "yerlesen": 5,
+      "bosKalan": 0,
+      "minPuan": 84.64537,
+      "maxPuan": 87.54714
+    }
+  ]
+}

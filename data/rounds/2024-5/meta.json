@@ -1,0 +1,48 @@
+{
+  "round": "2024/5",
+  "landing": "https://www.osym.gov.tr/kpss20245-saglik-bakanliginin-sozlesmeli-saglik-personeli-pozisyonlarinin-yerlestirme-sonuclarina-iliskin-sayisal-bilgiler",
+  "parser": "parse-results@1",
+  "channel": "kurum",
+  "channelTitle": "Sağlık Bakanlığı",
+  "levels": {
+    "lisans": {
+      "parsed": 2559,
+      "uniqueCodes": 2559,
+      "rejectedLines": 1,
+      "kurumWithoutSeparator": 0,
+      "rejectedSample": [
+        "Sayısı         Aday Sayısı  Kontenjan Sayısı  Puan      Puan"
+      ],
+      "rows": 2559,
+      "kontenjan": 16760,
+      "yerlesen": 16760,
+      "bosKalan": 0
+    },
+    "onlisans": {
+      "parsed": 3685,
+      "uniqueCodes": 3685,
+      "rejectedLines": 1,
+      "kurumWithoutSeparator": 0,
+      "rejectedSample": [
+        "Sayısı         Aday Sayısı  Kontenjan Sayısı  Puan      Puan"
+      ],
+      "rows": 3685,
+      "kontenjan": 6850,
+      "yerlesen": 6850,
+      "bosKalan": 0
+    },
+    "ortaogretim": {
+      "parsed": 1676,
+      "uniqueCodes": 1676,
+      "rejectedLines": 1,
+      "kurumWithoutSeparator": 0,
+      "rejectedSample": [
+        "Sayısı     Aday Sayısı  Kontenjan Sayısı  Puan      Puan"
+      ],
+      "rows": 1676,
+      "kontenjan": 3390,
+      "yerlesen": 3390,
+      "bosKalan": 0
+    }
+  }
+}

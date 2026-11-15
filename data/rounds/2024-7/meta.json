@@ -1,0 +1,42 @@
+{
+  "round": "2024/7",
+  "landing": "https://www.osym.gov.tr/kpss20247-kentsel-donusum-baskanliginin-sozlesmeli-personel-pozisyonlarinin-yerlestirme-sonuclarina-iliskin-sayisal-bilgiler",
+  "parser": "parse-results@1",
+  "channel": "kurum",
+  "channelTitle": "Kentsel Dönüşüm Başkanlığı",
+  "levels": {
+    "lisans": {
+      "parsed": 2,
+      "uniqueCodes": 2,
+      "rejectedLines": 0,
+      "kurumWithoutSeparator": 0,
+      "rejectedSample": [],
+      "rows": 2,
+      "kontenjan": 30,
+      "yerlesen": 30,
+      "bosKalan": 0
+    },
+    "onlisans": {
+      "parsed": 2,
+      "uniqueCodes": 2,
+      "rejectedLines": 0,
+      "kurumWithoutSeparator": 0,
+      "rejectedSample": [],
+      "rows": 2,
+      "kontenjan": 25,
+      "yerlesen": 25,
+      "bosKalan": 0
+    },
+    "ortaogretim": {
+      "parsed": 1,
+      "uniqueCodes": 1,
+      "rejectedLines": 0,
+      "kurumWithoutSeparator": 0,
+      "rejectedSample": [],
+      "rows": 1,
+      "kontenjan": 29,
+      "yerlesen": 29,
+      "bosKalan": 0
+    }
+  }
+}

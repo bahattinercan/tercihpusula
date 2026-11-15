@@ -1,0 +1,54 @@
+{
+  "round": "2023/3",
+  "level": "ortaogretim",
+  "rows": [
+    {
+      "kod": "103010101",
+      "kurum": "SANAYİ VE TEKNOLOJİ BAKANLIĞI",
+      "il": "ANKARA",
+      "teskilat": "MERKEZ",
+      "unvan": "DESTEK PERSONELİ (Temizlik Personeli)",
+      "kontenjan": 5,
+      "yerlesen": 5,
+      "bosKalan": 0,
+      "minPuan": 91.5492,
+      "maxPuan": 93.83286
+    },
+    {
+      "kod": "103010108",
+      "kurum": "SANAYİ VE TEKNOLOJİ BAKANLIĞI",
+      "il": "ANKARA",
+      "teskilat": "MERKEZ",
+      "unvan": "DESTEK PERSONELİ (Temizlik Personeli)",
+      "kontenjan": 5,
+      "yerlesen": 5,
+      "bosKalan": 0,
+      "minPuan": 88.99614,
+      "maxPuan": 93.56762
+    },
+    {
+      "kod": "103010115",
+      "kurum": "SANAYİ VE TEKNOLOJİ BAKANLIĞI",
+      "il": "ANKARA",
+      "teskilat": "MERKEZ",
+      "unvan": "DESTEK PERSONELİ",
+      "kontenjan": 1,
+      "yerlesen": 1,
+      "bosKalan": 0,
+      "minPuan": 63.71415,
+      "maxPuan": 63.71415
+    },
+    {
+      "kod": "103010122",
+      "kurum": "SANAYİ VE TEKNOLOJİ BAKANLIĞI",
+      "il": "ANKARA",
+      "teskilat": "MERKEZ",
+      "unvan": "DESTEK PERSONELİ",
+      "kontenjan": 1,
+      "yerlesen": 1,
+      "bosKalan": 0,
+      "minPuan": 79.15686,
+      "maxPuan": 79.15686
+    }
+  ]
+}

@@ -1,6 +1,694 @@
 [
   {
     "name": "A",
+    "round": "2023/3",
+    "level": "lisans",
+    "ok": true,
+    "totals": {
+      "kontenjan": 16,
+      "yerlesen": 16,
+      "bos": 0,
+      "rows": 12
+    },
+    "official": {
+      "tercihYapan": 6245,
+      "kontenjan": 16,
+      "yerlesen": 16,
+      "bos": 0
+    },
+    "problems": []
+  },
+  {
+    "name": "B",
+    "round": "2023/3",
+    "level": "lisans",
+    "ok": true,
+    "problems": []
+  },
+  {
+    "name": "C",
+    "round": "2023/3",
+    "level": "lisans",
+    "ok": true,
+    "skipped": "no previous round",
+    "warnings": []
+  },
+  {
+    "name": "D",
+    "round": "2023/3",
+    "level": "lisans",
+    "ok": true,
+    "skipped": "round not covered by cross-source"
+  },
+  {
+    "name": "A",
+    "round": "2023/3",
+    "level": "onlisans",
+    "ok": true,
+    "totals": {
+      "kontenjan": 13,
+      "yerlesen": 13,
+      "bos": 0,
+      "rows": 4
+    },
+    "official": {
+      "tercihYapan": 2015,
+      "kontenjan": 13,
+      "yerlesen": 13,
+      "bos": 0
+    },
+    "problems": []
+  },
+  {
+    "name": "B",
+    "round": "2023/3",
+    "level": "onlisans",
+    "ok": true,
+    "problems": []
+  },
+  {
+    "name": "C",
+    "round": "2023/3",
+    "level": "onlisans",
+    "ok": true,
+    "skipped": "no previous round",
+    "warnings": []
+  },
+  {
+    "name": "D",
+    "round": "2023/3",
+    "level": "onlisans",
+    "ok": true,
+    "skipped": "round not covered by cross-source"
+  },
+  {
+    "name": "A",
+    "round": "2023/3",
+    "level": "ortaogretim",
+    "ok": true,
+    "totals": {
+      "kontenjan": 12,
+      "yerlesen": 12,
+      "bos": 0,
+      "rows": 4
+    },
+    "official": {
+      "tercihYapan": 9595,
+      "kontenjan": 12,
+      "yerlesen": 12,
+      "bos": 0
+    },
+    "problems": []
+  },
+  {
+    "name": "B",
+    "round": "2023/3",
+    "level": "ortaogretim",
+    "ok": true,
+    "problems": []
+  },
+  {
+    "name": "C",
+    "round": "2023/3",
+    "level": "ortaogretim",
+    "ok": true,
+    "skipped": "no previous round",
+    "warnings": []
+  },
+  {
+    "name": "D",
+    "round": "2023/3",
+    "level": "ortaogretim",
+    "ok": true,
+    "skipped": "round not covered by cross-source"
+  },
+  {
+    "name": "A",
+    "round": "2023/6",
+    "level": "lisans",
+    "ok": true,
+    "totals": {
+      "kontenjan": 529,
+      "yerlesen": 529,
+      "bos": 0,
+      "rows": 24
+    },
+    "official": {
+      "tercihYapan": 32020,
+      "kontenjan": 529,
+      "yerlesen": 529,
+      "bos": 0
+    },
+    "problems": []
+  },
+  {
+    "name": "B",
+    "round": "2023/6",
+    "level": "lisans",
+    "ok": true,
+    "problems": []
+  },
+  {
+    "name": "C",
+    "round": "2023/6",
+    "level": "lisans",
+    "ok": true,
+    "warnings": [
+      "BÜRO PERSONELİ: kontenjan 7 → 529"
+    ]
+  },
+  {
+    "name": "D",
+    "round": "2023/6",
+    "level": "lisans",
+    "ok": true,
+    "skipped": "round not covered by cross-source"
+  },
+  {
+    "name": "A",
+    "round": "2023/6",
+    "level": "onlisans",
+    "ok": true,
+    "totals": {
+      "kontenjan": 729,
+      "yerlesen": 729,
+      "bos": 0,
+      "rows": 99
+    },
+    "official": {
+      "tercihYapan": 7725,
+      "kontenjan": 729,
+      "yerlesen": 729,
+      "bos": 0
+    },
+    "problems": []
+  },
+  {
+    "name": "B",
+    "round": "2023/6",
+    "level": "onlisans",
+    "ok": true,
+    "problems": []
+  },
+  {
+    "name": "C",
+    "round": "2023/6",
+    "level": "onlisans",
+    "ok": true,
+    "warnings": [
+      "BÜRO PERSONELİ: kontenjan 13 → 702"
+    ]
+  },
+  {
+    "name": "D",
+    "round": "2023/6",
+    "level": "onlisans",
+    "ok": true,
+    "skipped": "round not covered by cross-source"
+  },
+  {
+    "name": "A",
+    "round": "2023/6",
+    "level": "ortaogretim",
+    "ok": true,
+    "totals": {
+      "kontenjan": 134,
+      "yerlesen": 134,
+      "bos": 0,
+      "rows": 69
+    },
+    "official": {
+      "tercihYapan": 31083,
+      "kontenjan": 134,
+      "yerlesen": 134,
+      "bos": 0
+    },
+    "problems": []
+  },
+  {
+    "name": "B",
+    "round": "2023/6",
+    "level": "ortaogretim",
+    "ok": true,
+    "problems": []
+  },
+  {
+    "name": "C",
+    "round": "2023/6",
+    "level": "ortaogretim",
+    "ok": true,
+    "warnings": []
+  },
+  {
+    "name": "D",
+    "round": "2023/6",
+    "level": "ortaogretim",
+    "ok": true,
+    "skipped": "round not covered by cross-source"
+  },
+  {
+    "name": "A",
+    "round": "2023/7",
+    "level": "lisans",
+    "ok": true,
+    "totals": {
+      "kontenjan": 119,
+      "yerlesen": 119,
+      "bos": 0,
+      "rows": 66
+    },
+    "official": {
+      "tercihYapan": 15790,
+      "kontenjan": 119,
+      "yerlesen": 119,
+      "bos": 0
+    },
+    "problems": []
+  },
+  {
+    "name": "B",
+    "round": "2023/7",
+    "level": "lisans",
+    "ok": true,
+    "problems": []
+  },
+  {
+    "name": "C",
+    "round": "2023/7",
+    "level": "lisans",
+    "ok": true,
+    "warnings": []
+  },
+  {
+    "name": "D",
+    "round": "2023/7",
+    "level": "lisans",
+    "ok": true,
+    "skipped": "round not covered by cross-source"
+  },
+  {
+    "name": "A",
+    "round": "2023/7",
+    "level": "onlisans",
+    "ok": true,
+    "totals": {
+      "kontenjan": 208,
+      "yerlesen": 208,
+      "bos": 0,
+      "rows": 174
+    },
+    "official": {
+      "tercihYapan": 15499,
+      "kontenjan": 208,
+      "yerlesen": 208,
+      "bos": 0
+    },
+    "problems": []
+  },
+  {
+    "name": "B",
+    "round": "2023/7",
+    "level": "onlisans",
+    "ok": true,
+    "problems": []
+  },
+  {
+    "name": "C",
+    "round": "2023/7",
+    "level": "onlisans",
+    "ok": true,
+    "warnings": []
+  },
+  {
+    "name": "D",
+    "round": "2023/7",
+    "level": "onlisans",
+    "ok": true,
+    "skipped": "round not covered by cross-source"
+  },
+  {
+    "name": "A",
+    "round": "2024/4",
+    "level": "lisans",
+    "ok": true,
+    "totals": {
+      "kontenjan": 2225,
+      "yerlesen": 2225,
+      "bos": 0,
+      "rows": 1298
+    },
+    "official": {
+      "tercihYapan": 112508,
+      "kontenjan": 2225,
+      "yerlesen": 2225,
+      "bos": 0
+    },
+    "problems": []
+  },
+  {
+    "name": "B",
+    "round": "2024/4",
+    "level": "lisans",
+    "ok": true,
+    "problems": []
+  },
+  {
+    "name": "C",
+    "round": "2024/4",
+    "level": "lisans",
+    "ok": true,
+    "warnings": []
+  },
+  {
+    "name": "D",
+    "round": "2024/4",
+    "level": "lisans",
+    "ok": true,
+    "skipped": "round not covered by cross-source"
+  },
+  {
+    "name": "A",
+    "round": "2024/4",
+    "level": "onlisans",
+    "ok": true,
+    "totals": {
+      "kontenjan": 1484,
+      "yerlesen": 1484,
+      "bos": 0,
+      "rows": 1030
+    },
+    "official": {
+      "tercihYapan": 45736,
+      "kontenjan": 1484,
+      "yerlesen": 1484,
+      "bos": 0
+    },
+    "problems": []
+  },
+  {
+    "name": "B",
+    "round": "2024/4",
+    "level": "onlisans",
+    "ok": true,
+    "problems": []
+  },
+  {
+    "name": "C",
+    "round": "2024/4",
+    "level": "onlisans",
+    "ok": true,
+    "warnings": []
+  },
+  {
+    "name": "D",
+    "round": "2024/4",
+    "level": "onlisans",
+    "ok": true,
+    "skipped": "round not covered by cross-source"
+  },
+  {
+    "name": "A",
+    "round": "2024/4",
+    "level": "ortaogretim",
+    "ok": true,
+    "totals": {
+      "kontenjan": 1791,
+      "yerlesen": 1791,
+      "bos": 0,
+      "rows": 1274
+    },
+    "official": {
+      "tercihYapan": 97443,
+      "kontenjan": 1791,
+      "yerlesen": 1791,
+      "bos": 0
+    },
+    "problems": []
+  },
+  {
+    "name": "B",
+    "round": "2024/4",
+    "level": "ortaogretim",
+    "ok": true,
+    "problems": []
+  },
+  {
+    "name": "C",
+    "round": "2024/4",
+    "level": "ortaogretim",
+    "ok": true,
+    "skipped": "no previous round",
+    "warnings": []
+  },
+  {
+    "name": "D",
+    "round": "2024/4",
+    "level": "ortaogretim",
+    "ok": true,
+    "skipped": "round not covered by cross-source"
+  },
+  {
+    "name": "A",
+    "round": "2024/5",
+    "level": "lisans",
+    "ok": true,
+    "totals": {
+      "kontenjan": 16760,
+      "yerlesen": 16760,
+      "bos": 0,
+      "rows": 2559
+    },
+    "official": {
+      "tercihYapan": 69751,
+      "kontenjan": 16760,
+      "yerlesen": 16760,
+      "bos": 0
+    },
+    "problems": []
+  },
+  {
+    "name": "B",
+    "round": "2024/5",
+    "level": "lisans",
+    "ok": true,
+    "problems": []
+  },
+  {
+    "name": "C",
+    "round": "2024/5",
+    "level": "lisans",
+    "ok": true,
+    "warnings": []
+  },
+  {
+    "name": "D",
+    "round": "2024/5",
+    "level": "lisans",
+    "ok": true,
+    "skipped": "round not covered by cross-source"
+  },
+  {
+    "name": "A",
+    "round": "2024/5",
+    "level": "onlisans",
+    "ok": true,
+    "totals": {
+      "kontenjan": 6850,
+      "yerlesen": 6850,
+      "bos": 0,
+      "rows": 3685
+    },
+    "official": {
+      "tercihYapan": 118341,
+      "kontenjan": 6850,
+      "yerlesen": 6850,
+      "bos": 0
+    },
+    "problems": []
+  },
+  {
+    "name": "B",
+    "round": "2024/5",
+    "level": "onlisans",
+    "ok": true,
+    "problems": []
+  },
+  {
+    "name": "C",
+    "round": "2024/5",
+    "level": "onlisans",
+    "ok": true,
+    "warnings": []
+  },
+  {
+    "name": "D",
+    "round": "2024/5",
+    "level": "onlisans",
+    "ok": true,
+    "skipped": "round not covered by cross-source"
+  },
+  {
+    "name": "A",
+    "round": "2024/5",
+    "level": "ortaogretim",
+    "ok": true,
+    "totals": {
+      "kontenjan": 3390,
+      "yerlesen": 3390,
+      "bos": 0,
+      "rows": 1676
+    },
+    "official": {
+      "tercihYapan": 51138,
+      "kontenjan": 3390,
+      "yerlesen": 3390,
+      "bos": 0
+    },
+    "problems": []
+  },
+  {
+    "name": "B",
+    "round": "2024/5",
+    "level": "ortaogretim",
+    "ok": true,
+    "problems": []
+  },
+  {
+    "name": "C",
+    "round": "2024/5",
+    "level": "ortaogretim",
+    "ok": true,
+    "warnings": []
+  },
+  {
+    "name": "D",
+    "round": "2024/5",
+    "level": "ortaogretim",
+    "ok": true,
+    "skipped": "round not covered by cross-source"
+  },
+  {
+    "name": "A",
+    "round": "2024/7",
+    "level": "lisans",
+    "ok": true,
+    "totals": {
+      "kontenjan": 30,
+      "yerlesen": 30,
+      "bos": 0,
+      "rows": 2
+    },
+    "official": {
+      "tercihYapan": 7891,
+      "kontenjan": 30,
+      "yerlesen": 30,
+      "bos": 0
+    },
+    "problems": []
+  },
+  {
+    "name": "B",
+    "round": "2024/7",
+    "level": "lisans",
+    "ok": true,
+    "problems": []
+  },
+  {
+    "name": "C",
+    "round": "2024/7",
+    "level": "lisans",
+    "ok": true,
+    "warnings": []
+  },
+  {
+    "name": "D",
+    "round": "2024/7",
+    "level": "lisans",
+    "ok": true,
+    "skipped": "round not covered by cross-source"
+  },
+  {
+    "name": "A",
+    "round": "2024/7",
+    "level": "onlisans",
+    "ok": true,
+    "totals": {
+      "kontenjan": 25,
+      "yerlesen": 25,
+      "bos": 0,
+      "rows": 2
+    },
+    "official": {
+      "tercihYapan": 14784,
+      "kontenjan": 25,
+      "yerlesen": 25,
+      "bos": 0
+    },
+    "problems": []
+  },
+  {
+    "name": "B",
+    "round": "2024/7",
+    "level": "onlisans",
+    "ok": true,
+    "problems": []
+  },
+  {
+    "name": "C",
+    "round": "2024/7",
+    "level": "onlisans",
+    "ok": true,
+    "warnings": []
+  },
+  {
+    "name": "D",
+    "round": "2024/7",
+    "level": "onlisans",
+    "ok": true,
+    "skipped": "round not covered by cross-source"
+  },
+  {
+    "name": "A",
+    "round": "2024/7",
+    "level": "ortaogretim",
+    "ok": true,
+    "totals": {
+      "kontenjan": 29,
+      "yerlesen": 29,
+      "bos": 0,
+      "rows": 1
+    },
+    "official": {
+      "tercihYapan": 21361,
+      "kontenjan": 29,
+      "yerlesen": 29,
+      "bos": 0
+    },
+    "problems": []
+  },
+  {
+    "name": "B",
+    "round": "2024/7",
+    "level": "ortaogretim",
+    "ok": true,
+    "problems": []
+  },
+  {
+    "name": "C",
+    "round": "2024/7",
+    "level": "ortaogretim",
+    "ok": true,
+    "warnings": []
+  },
+  {
+    "name": "D",
+    "round": "2024/7",
+    "level": "ortaogretim",
+    "ok": true,
+    "skipped": "round not covered by cross-source"
+  },
+  {
+    "name": "A",
     "round": "2025/1",
     "level": "lisans",
     "ok": true,
@@ -30,8 +718,9 @@
     "round": "2025/1",
     "level": "lisans",
     "ok": true,
-    "skipped": "no previous round",
-    "warnings": []
+    "warnings": [
+      "BÜRO PERSONELİ: kontenjan 30 → 63"
+    ]
   },
   {
     "name": "D",
@@ -74,8 +763,9 @@
     "round": "2025/1",
     "level": "onlisans",
     "ok": true,
-    "skipped": "no previous round",
-    "warnings": []
+    "warnings": [
+      "BÜRO PERSONELİ: kontenjan 12 → 49"
+    ]
   },
   {
     "name": "D",
@@ -118,7 +808,6 @@
     "round": "2025/1",
     "level": "ortaogretim",
     "ok": true,
-    "skipped": "no previous round",
     "warnings": []
   },
   {
@@ -279,6 +968,86 @@
   },
   {
     "name": "A",
+    "round": "2025/3",
+    "level": "lisans",
+    "ok": true,
+    "totals": {
+      "kontenjan": 402,
+      "yerlesen": 402,
+      "bos": 0,
+      "rows": 238
+    },
+    "official": {
+      "tercihYapan": 37035,
+      "kontenjan": 402,
+      "yerlesen": 402,
+      "bos": 0
+    },
+    "problems": []
+  },
+  {
+    "name": "B",
+    "round": "2025/3",
+    "level": "lisans",
+    "ok": true,
+    "problems": []
+  },
+  {
+    "name": "C",
+    "round": "2025/3",
+    "level": "lisans",
+    "ok": true,
+    "warnings": []
+  },
+  {
+    "name": "D",
+    "round": "2025/3",
+    "level": "lisans",
+    "ok": true,
+    "skipped": "round not covered by cross-source"
+  },
+  {
+    "name": "A",
+    "round": "2025/3",
+    "level": "onlisans",
+    "ok": true,
+    "totals": {
+      "kontenjan": 97,
+      "yerlesen": 97,
+      "bos": 0,
+      "rows": 84
+    },
+    "official": {
+      "tercihYapan": 18011,
+      "kontenjan": 97,
+      "yerlesen": 97,
+      "bos": 0
+    },
+    "problems": []
+  },
+  {
+    "name": "B",
+    "round": "2025/3",
+    "level": "onlisans",
+    "ok": true,
+    "problems": []
+  },
+  {
+    "name": "C",
+    "round": "2025/3",
+    "level": "onlisans",
+    "ok": true,
+    "warnings": []
+  },
+  {
+    "name": "D",
+    "round": "2025/3",
+    "level": "onlisans",
+    "ok": true,
+    "skipped": "round not covered by cross-source"
+  },
+  {
+    "name": "A",
     "round": "2025/4",
     "level": "lisans",
     "ok": true,
@@ -308,11 +1077,7 @@
     "round": "2025/4",
     "level": "lisans",
     "ok": true,
-    "warnings": [
-      "EBE: kontenjan 6 → 1280",
-      "FİZYOTERAPİST: kontenjan 5 → 121",
-      "HEMŞİRE: kontenjan 107 → 6628"
-    ]
+    "warnings": []
   },
   {
     "name": "D",
@@ -352,9 +1117,7 @@
     "round": "2025/4",
     "level": "onlisans",
     "ok": true,
-    "warnings": [
-      "TEKNİKER: kontenjan 163 → 235"
-    ]
+    "warnings": []
   },
   {
     "name": "D",
@@ -394,10 +1157,8 @@
     "round": "2025/4",
     "level": "ortaogretim",
     "ok": true,
-    "warnings": [
-      "HEMŞİRE: kontenjan 36 → 969",
-      "TEKNİSYEN: kontenjan 91 → 273"
-    ]
+    "skipped": "no previous round",
+    "warnings": []
   },
   {
     "name": "D",

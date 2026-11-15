@@ -1,0 +1,30 @@
+{
+  "round": "2024/7",
+  "level": "onlisans",
+  "rows": [
+    {
+      "kod": "207010101",
+      "kurum": "KENTSEL DÖNÜŞÜM BAŞKANLIĞI",
+      "il": "ANKARA",
+      "teskilat": "MERKEZ",
+      "unvan": "BÜRO PERSONELİ",
+      "kontenjan": 12,
+      "yerlesen": 12,
+      "bosKalan": 0,
+      "minPuan": 85.29513,
+      "maxPuan": 89.49137
+    },
+    {
+      "kod": "207010108",
+      "kurum": "KENTSEL DÖNÜŞÜM BAŞKANLIĞI",
+      "il": "ANKARA",
+      "teskilat": "MERKEZ",
+      "unvan": "KORUMA VE GÜVENLİK GÖREVLİSİ (SİLAHLI)",
+      "kontenjan": 13,
+      "yerlesen": 13,
+      "bosKalan": 0,
+      "minPuan": 85.38179,
+      "maxPuan": 89.32971
+    }
+  ]
+}

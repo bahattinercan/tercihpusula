@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { fetchBytes } from './lib/http.mjs';
+import { channelTitle } from './lib/channel.mjs';
 import { pdfToText, pdftotextVersion } from './lib/pdftotext.mjs';
 import { discoverRounds, discoverDocuments, resolveGuideDocuments, roundKey, LEVELS } from './rounds.mjs';
 import { parseResultsText } from './parse-results.mjs';
@@ -21,14 +22,6 @@ const CENTRAL_ONLY = !process.argv.includes('--all');
 const ONLY = (process.argv.find((a) => a.startsWith('--only=')) ?? '').slice('--only='.length).split(',').filter(Boolean);
 
 const sha256 = (bytes) => createHash('sha256').update(bytes).digest('hex');
-
-// "KPSS-2025/5: Sağlık Bakanlığının Sözleşmeli Sağlık Personeli …" → "Sağlık Bakanlığı".
-// Kurum adı sayfanın kanal başlığı olarak kullanılır; eşleşmezse tam başlık kalır.
-const channelTitle = (title) => {
-  const body = title.replace(/^KPSS-\d{4}\/\d+:\s*/, '').trim();
-  const match = body.match(/^(.+?)(?:nın|nin|nun|nün)\s/);
-  return match ? match[1] : body;
-};
 
 const loadGuideFallback = () => {
   const file = join(ROOT, 'data', 'reference', 'guide-docs.json');
@@ -117,7 +110,10 @@ function cmdParse() {
       landing: manifest.landing,
       parser: 'parse-results@1',
       channel: manifest.channel ?? 'merkezi',
-      channelTitle: manifest.channelTitle ?? 'Merkezî yerleştirme (ÖSYM)',
+      channelTitle:
+        (manifest.channel ?? 'merkezi') === 'merkezi'
+          ? 'Merkezî yerleştirme (ÖSYM)'
+          : channelTitle(manifest.title ?? manifest.channelTitle ?? ''),
       levels: {},
     };
     for (const level of LEVELS) {

@@ -1,0 +1,48 @@
+{
+  "round": "2023/3",
+  "landing": "https://www.osym.gov.tr/kpss20233-sanayi-ve-teknoloji-bakanliginin-sozlesmeli-personel-pozisyonlarinin-yerlestirme-sonuclarina-iliskin-sayisal-bilgiler",
+  "parser": "parse-results@1",
+  "channel": "kurum",
+  "channelTitle": "Sanayi ve Teknoloji Bakanlığı",
+  "levels": {
+    "lisans": {
+      "parsed": 12,
+      "uniqueCodes": 12,
+      "rejectedLines": 0,
+      "kurumWithoutSeparator": 0,
+      "rejectedSample": [],
+      "rows": 12,
+      "kontenjan": 16,
+      "yerlesen": 16,
+      "bosKalan": 0
+    },
+    "onlisans": {
+      "parsed": 4,
+      "uniqueCodes": 4,
+      "rejectedLines": 2,
+      "kurumWithoutSeparator": 0,
+      "rejectedSample": [
+        "Kod                               Kurum Adı                      Kadro Unvanı    Sayısı         Aday Sayısı  Kontenjan  Puan      Puan",
+        "Sayısı"
+      ],
+      "rows": 4,
+      "kontenjan": 13,
+      "yerlesen": 13,
+      "bosKalan": 0
+    },
+    "ortaogretim": {
+      "parsed": 4,
+      "uniqueCodes": 4,
+      "rejectedLines": 2,
+      "kurumWithoutSeparator": 0,
+      "rejectedSample": [
+        "Kod                               Kurum Adı                              Kadro Unvanı                        Sayısı  Aday Sayısı  Kontenjan  Puan      Puan",
+        "Sayısı"
+      ],
+      "rows": 4,
+      "kontenjan": 12,
+      "yerlesen": 12,
+      "bosKalan": 0
+    }
+  }
+}

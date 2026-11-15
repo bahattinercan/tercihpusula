@@ -1,0 +1,52 @@
+{
+  "round": "2024/4",
+  "landing": "https://www.osym.gov.tr/kpss20244-tarim-ve-orman-bakanliginin-sozlesmeli-personel-pozisyonlarinin-yerlestirme-sonuclarina-iliskin-sayisal-bilgiler",
+  "parser": "parse-results@1",
+  "channel": "kurum",
+  "channelTitle": "Tarım ve Orman Bakanlığı",
+  "levels": {
+    "lisans": {
+      "parsed": 1298,
+      "uniqueCodes": 1298,
+      "rejectedLines": 1,
+      "kurumWithoutSeparator": 0,
+      "rejectedSample": [
+        "Sayısı"
+      ],
+      "rows": 1298,
+      "kontenjan": 2225,
+      "yerlesen": 2225,
+      "bosKalan": 0
+    },
+    "onlisans": {
+      "parsed": 1030,
+      "uniqueCodes": 1030,
+      "rejectedLines": 16,
+      "kurumWithoutSeparator": 1,
+      "rejectedSample": [
+        "En Küçük  ve En Büyük Puanlar (Ön Lisans)",
+        "Sayısı     Aday Sayısı  Kontenjan Sayısı  Puan      Puan",
+        "En Küçük  ve En Büyük Puanlar (Ön Lisans)",
+        "En Küçük      ve En Büyük Puanlar (Ön Lisans)",
+        "En Küçük      ve En Büyük Puanlar (Ön Lisans)"
+      ],
+      "rows": 1030,
+      "kontenjan": 1484,
+      "yerlesen": 1484,
+      "bosKalan": 0
+    },
+    "ortaogretim": {
+      "parsed": 1274,
+      "uniqueCodes": 1274,
+      "rejectedLines": 1,
+      "kurumWithoutSeparator": 1,
+      "rejectedSample": [
+        "Sayısı     Aday Sayısı  Kontenjan Sayısı  Puan      Puan"
+      ],
+      "rows": 1274,
+      "kontenjan": 1791,
+      "yerlesen": 1791,
+      "bosKalan": 0
+    }
+  }
+}

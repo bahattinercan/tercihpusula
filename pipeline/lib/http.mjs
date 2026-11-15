@@ -10,6 +10,14 @@ const REFERER = 'https://www.osym.gov.tr/';
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /**
+ * Ölçülen davranış (2026-11-15): dokuman.osym.gov.tr'nin HTTPS ucu bir noktadan sonra
+ * 2,7 KB'lık "Erişim Engellendi" HTML'i döndürürken aynı dosya HTTP (80) üzerinden
+ * 200 application/pdf geliyor. Engellendiğini görürsek protokolü bir kez düşürüp
+ * aynı yolu tekrar deneriz.
+ */
+const downgradeProtocol = (url) => (url.startsWith('https://') ? `http://${url.slice('https://'.length)}` : null);
+
+/**
  * @returns {Promise<{bytes: Buffer, contentType: string, url: string}>}
  */
 export async function fetchBytes(url, { referer = REFERER, tries = 3, delayMs = 1500 } = {}) {
@@ -33,6 +41,28 @@ export async function fetchBytes(url, { referer = REFERER, tries = 3, delayMs = 
       return { bytes, contentType, url };
     } catch (error) {
       lastError = error;
+      const fallback = downgradeProtocol(url);
+      if (fallback && /blocked by ÖSYM WAF/.test(error.message)) {
+        try {
+          const res = await fetch(fallback, {
+            headers: {
+              'User-Agent': UA,
+              Referer: referer,
+              Accept: 'application/pdf,text/html;q=0.9,*/*;q=0.8',
+              'Accept-Language': 'tr-TR,tr;q=0.9,en;q=0.8',
+            },
+            redirect: 'follow',
+            signal: AbortSignal.timeout(90_000),
+          });
+          const bytes = Buffer.from(await res.arrayBuffer());
+          const contentType = res.headers.get('content-type') ?? '';
+          if (res.ok && !looksBlocked(bytes, contentType) && isPdf(bytes)) {
+            return { bytes, contentType, url: fallback };
+          }
+        } catch {
+          /* aşağıdaki bekleme + yeniden deneme devreye girer */
+        }
+      }
       if (attempt < tries) await sleep(delayMs * attempt);
     }
   }

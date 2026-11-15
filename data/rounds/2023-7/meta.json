@@ -1,0 +1,34 @@
+{
+  "round": "2023/7",
+  "landing": "https://www.osym.gov.tr/kpss20237-cevre-sehircilik-ve-iklim-degisikligi-bakanliginin-sozlesmeli-pozisyonlari-yerlestirme-sonuclarina-iliskin-sayisal-bilgiler",
+  "parser": "parse-results@1",
+  "channel": "kurum",
+  "channelTitle": "Çevre, Şehircilik ve İklim Değişikliği Bakanlığı",
+  "levels": {
+    "lisans": {
+      "parsed": 66,
+      "uniqueCodes": 66,
+      "rejectedLines": 0,
+      "kurumWithoutSeparator": 0,
+      "rejectedSample": [],
+      "rows": 66,
+      "kontenjan": 119,
+      "yerlesen": 119,
+      "bosKalan": 0
+    },
+    "onlisans": {
+      "parsed": 174,
+      "uniqueCodes": 174,
+      "rejectedLines": 2,
+      "kurumWithoutSeparator": 0,
+      "rejectedSample": [
+        "Kurum Kodu                                              Kurum Adı                                              Kadro  Unvanı       Sayısı     Aday Sayısı  Konte",
+        "Sayısı"
+      ],
+      "rows": 174,
+      "kontenjan": 208,
+      "yerlesen": 208,
+      "bosKalan": 0
+    }
+  }
+}

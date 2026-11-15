@@ -1,0 +1,54 @@
+{
+  "round": "2023/3",
+  "level": "onlisans",
+  "rows": [
+    {
+      "kod": "203010101",
+      "kurum": "SANAYİ VE TEKNOLOJİ BAKANLIĞI",
+      "il": "ANKARA",
+      "teskilat": "MERKEZ",
+      "unvan": "BÜRO PERSONELİ",
+      "kontenjan": 3,
+      "yerlesen": 3,
+      "bosKalan": 0,
+      "minPuan": 80.2651,
+      "maxPuan": 83.49636
+    },
+    {
+      "kod": "203010108",
+      "kurum": "SANAYİ VE TEKNOLOJİ BAKANLIĞI",
+      "il": "ANKARA",
+      "teskilat": "MERKEZ",
+      "unvan": "BÜRO PERSONELİ",
+      "kontenjan": 2,
+      "yerlesen": 2,
+      "bosKalan": 0,
+      "minPuan": 81.23087,
+      "maxPuan": 86.66417
+    },
+    {
+      "kod": "203010115",
+      "kurum": "SANAYİ VE TEKNOLOJİ BAKANLIĞI",
+      "il": "ANKARA",
+      "teskilat": "MERKEZ",
+      "unvan": "BÜRO PERSONELİ",
+      "kontenjan": 3,
+      "yerlesen": 3,
+      "bosKalan": 0,
+      "minPuan": 78.48656,
+      "maxPuan": 87.26029
+    },
+    {
+      "kod": "203010122",
+      "kurum": "SANAYİ VE TEKNOLOJİ BAKANLIĞI",
+      "il": "ANKARA",
+      "teskilat": "MERKEZ",
+      "unvan": "BÜRO PERSONELİ",
+      "kontenjan": 5,
+      "yerlesen": 5,
+      "bosKalan": 0,
+      "minPuan": 81.65437,
+      "maxPuan": 87.99145
+    }
+  ]
+}

@@ -1,0 +1,150 @@
+{
+  "round": "2023/3",
+  "level": "lisans",
+  "rows": [
+    {
+      "kod": "303010101",
+      "kurum": "SANAYİ VE TEKNOLOJİ BAKANLIĞI",
+      "il": "ANKARA",
+      "teskilat": "MERKEZ",
+      "unvan": "MÜHENDİS",
+      "kontenjan": 1,
+      "yerlesen": 1,
+      "bosKalan": 0,
+      "minPuan": 94.01626,
+      "maxPuan": 94.01626
+    },
+    {
+      "kod": "303010108",
+      "kurum": "SANAYİ VE TEKNOLOJİ BAKANLIĞI",
+      "il": "ANKARA",
+      "teskilat": "MERKEZ",
+      "unvan": "BÜRO PERSONELİ",
+      "kontenjan": 2,
+      "yerlesen": 2,
+      "bosKalan": 0,
+      "minPuan": 80.14378,
+      "maxPuan": 80.61354
+    },
+    {
+      "kod": "303010115",
+      "kurum": "SANAYİ VE TEKNOLOJİ BAKANLIĞI",
+      "il": "ANKARA",
+      "teskilat": "MERKEZ",
+      "unvan": "BÜRO PERSONELİ",
+      "kontenjan": 2,
+      "yerlesen": 2,
+      "bosKalan": 0,
+      "minPuan": 87.93726,
+      "maxPuan": 88.39882
+    },
+    {
+      "kod": "303010122",
+      "kurum": "SANAYİ VE TEKNOLOJİ BAKANLIĞI",
+      "il": "ANKARA",
+      "teskilat": "MERKEZ",
+      "unvan": "BÜRO PERSONELİ",
+      "kontenjan": 3,
+      "yerlesen": 3,
+      "bosKalan": 0,
+      "minPuan": 83.51589,
+      "maxPuan": 85.26322
+    },
+    {
+      "kod": "303010129",
+      "kurum": "SANAYİ VE TEKNOLOJİ BAKANLIĞI",
+      "il": "ADANA",
+      "teskilat": "TAŞRA",
+      "unvan": "MİMAR",
+      "kontenjan": 1,
+      "yerlesen": 1,
+      "bosKalan": 0,
+      "minPuan": 94.98174,
+      "maxPuan": 94.98174
+    },
+    {
+      "kod": "303010136",
+      "kurum": "SANAYİ VE TEKNOLOJİ BAKANLIĞI",
+      "il": "ANKARA",
+      "teskilat": "TAŞRA",
+      "unvan": "MÜHENDİS",
+      "kontenjan": 1,
+      "yerlesen": 1,
+      "bosKalan": 0,
+      "minPuan": 93.81488,
+      "maxPuan": 93.81488
+    },
+    {
+      "kod": "303010143",
+      "kurum": "SANAYİ VE TEKNOLOJİ BAKANLIĞI",
+      "il": "İSTANBUL",
+      "teskilat": "TAŞRA",
+      "unvan": "MİMAR",
+      "kontenjan": 1,
+      "yerlesen": 1,
+      "bosKalan": 0,
+      "minPuan": 93.49,
+      "maxPuan": 93.49
+    },
+    {
+      "kod": "303010150",
+      "kurum": "SANAYİ VE TEKNOLOJİ BAKANLIĞI",
+      "il": "İSTANBUL",
+      "teskilat": "TAŞRA",
+      "unvan": "MÜHENDİS",
+      "kontenjan": 1,
+      "yerlesen": 1,
+      "bosKalan": 0,
+      "minPuan": 94.96991,
+      "maxPuan": 94.96991
+    },
+    {
+      "kod": "303010157",
+      "kurum": "SANAYİ VE TEKNOLOJİ BAKANLIĞI",
+      "il": "MANİSA",
+      "teskilat": "TAŞRA",
+      "unvan": "MÜHENDİS",
+      "kontenjan": 1,
+      "yerlesen": 1,
+      "bosKalan": 0,
+      "minPuan": 92.83528,
+      "maxPuan": 92.83528
+    },
+    {
+      "kod": "303010164",
+      "kurum": "SANAYİ VE TEKNOLOJİ BAKANLIĞI",
+      "il": "OSMANİYE",
+      "teskilat": "TAŞRA",
+      "unvan": "MÜHENDİS",
+      "kontenjan": 1,
+      "yerlesen": 1,
+      "bosKalan": 0,
+      "minPuan": 93.603,
+      "maxPuan": 93.603
+    },
+    {
+      "kod": "303010171",
+      "kurum": "SANAYİ VE TEKNOLOJİ BAKANLIĞI",
+      "il": "TEKİRDAĞ",
+      "teskilat": "TAŞRA",
+      "unvan": "MİMAR",
+      "kontenjan": 1,
+      "yerlesen": 1,
+      "bosKalan": 0,
+      "minPuan": 93.52875,
+      "maxPuan": 93.52875
+    },
+    {
+      "kod": "303010178",
+      "kurum": "SANAYİ VE TEKNOLOJİ BAKANLIĞI",
+      "il": "TEKİRDAĞ",
+      "teskilat": "TAŞRA",
+      "unvan": "ŞEHİR PLANCISI",
+      "kontenjan": 1,
+      "yerlesen": 1,
+      "bosKalan": 0,
+      "minPuan": 88.31274,
+      "maxPuan": 88.31274
+    }
+  ]
+}

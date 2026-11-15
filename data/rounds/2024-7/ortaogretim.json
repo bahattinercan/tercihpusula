@@ -1,0 +1,18 @@
+{
+  "round": "2024/7",
+  "level": "ortaogretim",
+  "rows": [
+    {
+      "kod": "107010101",
+      "kurum": "KENTSEL DÖNÜŞÜM BAŞKANLIĞI",
+      "il": "ANKARA",
+      "teskilat": "MERKEZ",
+      "unvan": "DESTEK PERSONELİ (Temizlik Görevlisi)",
+      "kontenjan": 29,
+      "yerlesen": 29,
+      "bosKalan": 0,
+      "minPuan": 91.41429,
+      "maxPuan": 97.33795
+    }
+  ]
+}

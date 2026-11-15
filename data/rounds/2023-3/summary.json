@@ -1,0 +1,29 @@
+{
+  "round": "2023/3",
+  "levels": {
+    "lisans": {
+      "tercihYapan": 6245,
+      "kontenjan": 16,
+      "yerlesen": 16,
+      "bos": 0
+    },
+    "onlisans": {
+      "tercihYapan": 2015,
+      "kontenjan": 13,
+      "yerlesen": 13,
+      "bos": 0
+    },
+    "ortaogretim": {
+      "tercihYapan": 9595,
+      "kontenjan": 12,
+      "yerlesen": 12,
+      "bos": 0
+    },
+    "toplam": {
+      "tercihYapan": 17855,
+      "kontenjan": 41,
+      "yerlesen": 41,
+      "bos": 0
+    }
+  }
+}

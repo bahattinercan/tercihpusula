@@ -1,0 +1,46 @@
+{
+  "round": "2023/6",
+  "landing": "https://www.osym.gov.tr/kpss20236-sosyal-guvenlik-kurumu-baskanliginin-sozlesmeli-personel-pozisyonlarinin-yerlestirme-sonuclarina-iliskin-sayisal-bilgiler",
+  "parser": "parse-results@1",
+  "channel": "kurum",
+  "channelTitle": "Sosyal Güvenlik Kurumu Başkanlığı",
+  "levels": {
+    "lisans": {
+      "parsed": 24,
+      "uniqueCodes": 24,
+      "rejectedLines": 0,
+      "kurumWithoutSeparator": 0,
+      "rejectedSample": [],
+      "rows": 24,
+      "kontenjan": 529,
+      "yerlesen": 529,
+      "bosKalan": 0
+    },
+    "onlisans": {
+      "parsed": 99,
+      "uniqueCodes": 99,
+      "rejectedLines": 1,
+      "kurumWithoutSeparator": 0,
+      "rejectedSample": [
+        "Sayısı               Aday Sayısı  Kontenjan Sayısı  Puan      Puan"
+      ],
+      "rows": 99,
+      "kontenjan": 729,
+      "yerlesen": 729,
+      "bosKalan": 0
+    },
+    "ortaogretim": {
+      "parsed": 69,
+      "uniqueCodes": 69,
+      "rejectedLines": 1,
+      "kurumWithoutSeparator": 0,
+      "rejectedSample": [
+        "Sayısı      Aday Sayısı  Kontenjan Sayısı  Puan      Puan"
+      ],
+      "rows": 69,
+      "kontenjan": 134,
+      "yerlesen": 134,
+      "bosKalan": 0
+    }
+  }
+}
