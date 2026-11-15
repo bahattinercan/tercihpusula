@@ -489,6 +489,31 @@ async function main() {
       );
     }
 
+    await client.send('Page.navigate', { url: `${ROOT_URL}/kurum-alimlari.html` });
+    await sleep(500);
+    const kurumChannels = await evaluate(client, "document.querySelectorAll('[data-channel]').length");
+    check('kurum alımları: kanal bölümleri var', kurumChannels >= 1, `${kurumChannels} kanal`);
+    const kurumRows = await evaluate(client, "document.querySelectorAll('#kurum-tables [data-name]').length");
+    check('kurum alımları: unvan satırları render edildi', kurumRows > 0, `${kurumRows} satır`);
+    const kurumCounter = await evaluate(client, "document.querySelector('#kurum-count').textContent");
+    check('kurum alımları: sayaç dolu', /\d/.test(kurumCounter), kurumCounter);
+    await evaluate(
+      client,
+      "(() => { const i = document.querySelector('#kurum-filter'); i.value = 'hemsire'; i.dispatchEvent(new Event('input')); })()",
+    );
+    await sleep(150);
+    const kurumFiltered = await evaluate(client, "document.querySelectorAll('#kurum-tables [data-name]:not([hidden])').length");
+    const kurumNames = await evaluate(
+      client,
+      "JSON.stringify([...document.querySelectorAll('#kurum-tables [data-name]:not([hidden])')].slice(0, 3).map((row) => row.dataset.name))",
+    );
+    check(
+      'kurum alımları: aksansız arama hemşire satırlarını buluyor',
+      kurumFiltered > 0 && kurumFiltered < kurumRows && /HEMŞİRE/.test(kurumNames),
+      `${kurumRows} → ${kurumFiltered} · ${kurumNames.slice(0, 110)}`,
+    );
+    await evaluate(client, "(() => { const i = document.querySelector('#kurum-filter'); i.value = ''; i.dispatchEvent(new Event('input')); })()");
+
     // boş kalan kadrolar: 3 dönem tablosu + unvan kırılımı
     await client.send('Emulation.clearDeviceMetricsOverride');
     await client.send('Page.navigate', { url: `${ROOT_URL}/bos-kalan-kadrolar.html` });
@@ -561,7 +586,7 @@ async function main() {
     // dağıtım hijyeni: dist kökünde yalnız yayımlanması gerekenler olmalı
     const ALLOWED_ROOT = new Set([
       'assets', 'data', 'kadrolar', '_headers', 'index.html', 'uygulama.html', 'tanitim.html',
-      'metodoloji.html', 'veri-kaynaklari.html', 'bos-kalan-kadrolar.html',
+      'metodoloji.html', 'veri-kaynaklari.html', 'bos-kalan-kadrolar.html', 'kurum-alimlari.html',
       '404.html', 'manifest.webmanifest', 'robots.txt', 'sitemap.xml', '.nojekyll',
     ]);
     const rootEntries = readdirSync(DIST);
@@ -641,7 +666,7 @@ async function main() {
     writeFileSync(join(SHOTS, 'tanitim.png'), Buffer.from(introShot.data, 'base64'));
 
     // ana sayfa + metodoloji dumanı
-    for (const path of ['/', '/tanitim.html', '/metodoloji.html', '/veri-kaynaklari.html', '/bos-kalan-kadrolar.html', '/kadrolar/']) {
+    for (const path of ['/', '/tanitim.html', '/metodoloji.html', '/veri-kaynaklari.html', '/bos-kalan-kadrolar.html', '/kurum-alimlari.html', '/kadrolar/']) {
       await client.send('Emulation.clearDeviceMetricsOverride');
       await client.send('Page.navigate', { url: `${ROOT_URL}${path}` });
       await sleep(400);

@@ -9,6 +9,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildSearchHints } from '../pipeline/lib/search-hints.mjs';
 import { buildPastTerms } from '../pipeline/lib/past-terms.mjs';
+import { summarizeChannels } from '../pipeline/lib/kurum-summary.mjs';
 
 const WEB = dirname(fileURLToPath(import.meta.url));
 const ROOT = dirname(WEB);
@@ -47,6 +48,7 @@ const fmt = (value) => (value === null || value === undefined ? '—' : value.to
 const NAV = [
   ['/uygulama.html', 'Uygulama'],
   ['/kadrolar/', 'Kadrolar'],
+  ['/kurum-alimlari.html', 'Kurum alımları'],
   ['/bos-kalan-kadrolar.html', 'Boş kalan kadrolar'],
   ['/metodoloji.html', 'Metodoloji'],
   ['/veri-kaynaklari.html', 'Veri ve kaynak'],
@@ -100,10 +102,19 @@ ${body.includes('dizin-filter') ? '<script type="module" src="/assets/dizin.js">
 </html>`;
 }
 
+const roundMeta = (key) => {
+  const file = join(ROUNDS, key, 'meta.json');
+  return existsSync(file) ? readJson(file) : { channel: 'merkezi', channelTitle: 'Merkezî yerleştirme (ÖSYM)' };
+};
+
+// Ana uygulama merkezî yerleştirmeyi gösterir; kurum alımları ayrı sayfada listelenir.
 function latestRound() {
-  const keys = readdirSync(ROUNDS).filter((entry) => /^\d{4}-\d$/.test(entry)).sort();
+  const keys = readdirSync(ROUNDS)
+    .filter((entry) => /^\d{4}-\d+$/.test(entry))
+    .filter((entry) => (roundMeta(entry).channel ?? 'merkezi') === 'merkezi')
+    .sort();
   const key = keys.at(-1);
-  if (!key) throw new Error('no parsed round found under data/rounds — run the pipeline first');
+  if (!key) throw new Error('no parsed central round found under data/rounds — run the pipeline first');
   return { key, round: key.replace('-', '/') };
 }
 
@@ -224,7 +235,14 @@ function main() {
   // güvenlik başlıkları: Cloudflare Pages / Netlify dist kökündeki _headers dosyasını okur
   if (existsSync(join(WEB, '_headers'))) cpSync(join(WEB, '_headers'), join(DIST, '_headers'));
 
-  const olderKeys = readdirSync(ROUNDS).filter((entry) => /^\d{4}-\d$/.test(entry) && entry < key).sort();
+  // Geçmiş yalnız aynı kanal içinde karşılaştırılır: 2025/5 Sağlık Bakanlığı sözleşmeli alımı
+  // ile 2025/2 merkezî yerleştirme aynı kadro değildir, karıştırmak yanlış taban puan gösterir.
+  const channel = roundMeta(key).channel ?? 'merkezi';
+  const olderKeys = readdirSync(ROUNDS)
+    .filter((entry) => /^\d{4}-\d+$/.test(entry) && entry < key)
+    .filter((entry) => (roundMeta(entry).channel ?? 'merkezi') === channel)
+    .sort()
+    .reverse();
   const previousByLevel = {};
   // Geçmiş dönem dökümü için: dönem bazlı, en yeni önce (buildPastTerms sırayı korur).
   const pastByLevel = {};
@@ -270,6 +288,25 @@ function main() {
   }
   writeFileSync(join(DIST, 'data', 'dizin.json'), JSON.stringify(levelHint));
   writeFileSync(join(DIST, 'data', 'search-hints.json'), JSON.stringify(buildSearchHints(hintInput(levels, olderKeys))));
+
+  // ---- kurum alımları: merkezî yerleştirme dışındaki ÖSYM dönemleri (Sağlık Bakanlığı, MEB …)
+  const kurumRounds = readdirSync(ROUNDS)
+    .filter((entry) => /^\d{4}-\d+$/.test(entry) && entry !== key)
+    .map((entry) => ({ key: entry, meta: roundMeta(entry) }))
+    .filter(({ meta }) => (meta.channel ?? 'merkezi') !== 'merkezi')
+    .sort((a, b) => b.key.localeCompare(a.key))
+    .map(({ key: rkey, meta }) => ({
+      round: meta.round ?? rkey.replace('-', '/'),
+      channelTitle: meta.channelTitle ?? 'Kurum alımı',
+      levels: Object.fromEntries(
+        LEVELS.map((level) => {
+          const file = join(ROUNDS, rkey, `${level}.json`);
+          return [level, existsSync(file) ? readJson(file).rows : []];
+        }),
+      ),
+    }));
+  const kurumSummary = summarizeChannels(kurumRounds);
+  writeFileSync(join(DIST, 'data', 'kurum.json'), JSON.stringify(kurumSummary));
 
   const totals = Object.values(levels).reduce(
     (acc, data) => ({
@@ -892,6 +929,68 @@ ${
     }),
   );
 
+  // ---- kurum alımları sayfası: kanal × unvan kapanış puanları
+  const kurumTotals = kurumSummary.channels.reduce(
+    (acc, channel) => ({
+      kontenjan: acc.kontenjan + channel.groups.reduce((sum, group) => sum + group.kontenjan, 0),
+      groups: acc.groups + channel.groups.length,
+      rounds: acc.rounds + new Set(channel.rounds.map((entry) => entry.round)).size,
+    }),
+    { kontenjan: 0, groups: 0, rounds: 0 },
+  );
+  const kurumBody = kurumSummary.channels
+    .map((channel) => {
+      const rounds = [...new Set(channel.rounds.map((entry) => entry.round))];
+      const rows = channel.groups
+        .map((group) => {
+          const perRound = Object.entries(group.rounds)
+            .sort((a, b) => b[0].localeCompare(a[0]))
+            .map(([period, entry]) => `${period}: ${entry.taban === null ? 'boş' : `${fmt(entry.taban)}–${fmt(entry.tavan)}`} (${entry.knt} kadro)`)
+            .join(' · ');
+          return `<tr data-name="${escapeHtml(`${group.unvan} ${group.level} ${channel.title}`)}">
+  <td><strong>${escapeHtml(group.unvan)}</strong><div class="sub">${escapeHtml(channel.title)}</div></td>
+  <td class="mono" style="font-size:11px;color:var(--ink-soft)">${LEVEL_LABEL[group.level] ?? group.level}</td>
+  <td class="num">${group.kontenjan}</td>
+  <td class="num dim">${group.yerlesen}</td>
+  <td class="num">${fmt(group.taban)}</td>
+  <td class="num dim">${fmt(group.tavan)}</td>
+  <td class="num dim">${group.iller}</td>
+  <td class="sub" style="max-width:22rem">${escapeHtml(perRound)}</td>
+</tr>`;
+        })
+        .join('');
+      return `<div class="channel-block" data-channel>
+<h2>${escapeHtml(channel.title)}</h2>
+<p class="count" style="margin-block-end:8px">${rounds.map((entry) => escapeHtml(entry)).join(' · ')} — kanalın yayımlanmış ${rounds.length} dönemi</p>
+<div class="table-wrap"><table><thead><tr><th>unvan</th><th>düzey</th><th class="num">kadro</th><th class="num">yerleşen</th><th class="num">taban</th><th class="num">tavan</th><th class="num">il</th><th>dönem bazında</th></tr></thead><tbody>${rows}</tbody></table></div>
+</div>`;
+    })
+    .join('\n');
+
+  writePage(
+    'kurum-alimlari.html',
+    layout({
+      title: 'Kurum alımları — kapanış puanları — Tercih Pusulası',
+      description:
+        'Merkezî yerleştirme dışındaki ÖSYM kurum alımlarında (Sağlık Bakanlığı, MEB…) unvan bazında kontenjan, taban ve tavan kapanış puanları.',
+      current: '/kurum-alimlari.html',
+      round,
+      body: `<p class="kicker">kurum alımları · ÖSYM yerleştirme sonuçları</p>
+<h1>Kurum alımları</h1>
+<p class="lede">Merkezî yerleştirmenin dışında kalan dönemler de ÖSYM tarafından yürütülüyor: Sağlık Bakanlığı, MEB ve diğer kurumların sözleşmeli personel alımları. Bu sayfa o dönemlerin <strong>gerçek kapanış puanlarını</strong> unvan bazında gösterir — “hemşire kaçla kapandı, kaç kadro vardı, hangi illerde” sorusunun yanıtı burada.</p>
+<p class="count">bu sayfada ${kurumSummary.channels.length} kanal · ${kurumTotals.rounds} dönem · ${kurumTotals.groups} unvan-düzey grubu · ${kurumTotals.kontenjan} kadro</p>
+<div class="toolbar">
+  <label class="hide" for="kurum-filter">unvan ara</label>
+  <input id="kurum-filter" class="dizin-filter" data-target="kurum-tables" data-count="kurum-count" type="search" placeholder="unvan ara: hemşire, ebe, tekniker…" style="max-width:22rem">
+  <span class="count" id="kurum-count"></span>
+</div>
+<div id="kurum-tables">
+${kurumBody}
+</div>
+<div class="note"><strong>Kapsam sınırı:</strong> Burada yalnız ÖSYM yerleştirmesiyle yapılan kurum alımları var. Sağlık Bakanlığı'nın noter kurasıyla (4924/1219) yaptığı alımlar, İŞKUR üzerinden yürüyen işçi alımları ve MEB sözleşmeli öğretmen atamaları ayrı süreçlerdir; kura ile yapılan alımda kapanış puanı doğmaz, bu yüzden burada tahmin de üretilmez. Kapsamı genişletme planı: <a href="/metodoloji.html">metodoloji</a> ve <a href="/veri-kaynaklari.html">veri kaynakları</a>.</div>`,
+    }),
+  );
+
   // ---- SEO: unvan ve il sayfaları
   const groupStats = (rows) => {
     const tabans = rows.map((row) => row.taban).filter((value) => value !== null && value !== undefined);
@@ -1074,7 +1173,7 @@ ${renderRowTable(sorted)}`,
     join(DIST, 'assets', 'favicon.svg'),
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#1a5fd0"/><path d="M32 12 44 32 32 52 20 32Z" fill="#fff"/><circle cx="32" cy="32" r="4" fill="#1a5fd0"/></svg>',
   );
-  const urls = ['/', '/uygulama.html', '/tanitim.html', '/metodoloji.html', '/veri-kaynaklari.html', '/bos-kalan-kadrolar.html', '/kadrolar/', ...unvanLinks.map((l) => l.href), ...ilLinks.map((l) => l.href)];  writeFileSync(join(DIST, 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map((u) => `  <url><loc>${SITE_URL}${BASE}${u}</loc></url>`).join('\n')}\n</urlset>\n`);
+  const urls = ['/', '/uygulama.html', '/tanitim.html', '/metodoloji.html', '/veri-kaynaklari.html', '/bos-kalan-kadrolar.html', '/kurum-alimlari.html', '/kadrolar/', ...unvanLinks.map((l) => l.href), ...ilLinks.map((l) => l.href)];  writeFileSync(join(DIST, 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map((u) => `  <url><loc>${SITE_URL}${BASE}${u}</loc></url>`).join('\n')}\n</urlset>\n`);
   writeFileSync(join(DIST, 'robots.txt'), `User-agent: *\nAllow: /\nSitemap: ${SITE_URL}${BASE}/sitemap.xml\n`);
   // GitHub Pages Jekyll'i atlamalıdır (aksi halde _ ile başlayan yollar işlenmez)
   writeFileSync(join(DIST, '.nojekyll'), '');

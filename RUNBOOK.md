@@ -98,6 +98,30 @@ npx wrangler pages deploy dist --project-name tercihpusula
 1. Sonuç dönemini `data/rounds/` altına ekle (aynı `fetch`/`parse`/`gate`).
 2. `backtest` ve `predict` yeniden çalışır: hata payı yeni dönemle güncellenir.
 3. `/metodoloji` sayfasındaki tablo kendiliğinden güncellenir (build çıktısı).
+
+## 7b. Kurum alımlarını (merkezî olmayan dönemleri) ekleme
+
+ÖSYM menüsünde 100'den fazla dönem var: `2025/5` Sağlık Bakanlığı, `2025/3` Çevre ve
+Şehircilik, `2024/6` MEB gibi sözleşmeli personel yerleştirmeleri. Bunlar merkezî yerleştirme
+değildir, bu yüzden ana uygulamanın geçmişine karışmaz (`meta.json` → `channel: kurum`);
+`/kurum-alimlari.html` sayfasında unvan bazında kapanış puanı olarak listelenir.
+
+```bash
+node pipeline/run.mjs fetch  --all --only=2025/5,2025/4   # PDF'ler data/raw/<dönem>/
+node pipeline/run.mjs parse  --all --only=2025/5,2025/4   # JSON'lar data/rounds/<dönem>/
+npm run build                                            # /kurum-alimlari.html + data/kurum.json
+npm run gate
+```
+
+Notlar:
+
+- `--all` şart: varsayılan yalnız `Bazı Kamu Kurum ve Kuruluşlar` (merkezî) dönemlerini seçer.
+- Kılavuz (nitelik tabloları) bu dönemlerin çoğunda yok; `parse` yalnız sonuç belgesini okur,
+  uygunluk motoru bu dönemler için çalışmaz — kapanış puanı ve kontenjan gösterilir.
+- Dönem başına ~0,6 MB JSON eklenir (3 düzey). Havuzu şişirmemek için kanal başına son 2 dönem
+  tutulur; daha eskisini eklerken `data/rounds/` altındakini silmek yeterlidir.
+- Sayı doğrulaması: `data/rounds/<dönem>/summary.json` (resmî "Sayısal Bilgiler") ile
+  `meta.json` toplamları eşleşmeli; `tests/kurum-summary.test.mjs` bunu kilitler.
 4. Boş kalan kadrolar sayfası yeni dönemin fırsatlarını gösterir.
 
 ## 8. Masaüstü sürümü (Windows uygulaması)
