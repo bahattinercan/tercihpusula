@@ -378,6 +378,65 @@ async function main() {
     const restored = await visibleRows();
     check('geçmiş filtresi kaldırılınca satırlar geri geliyor', restored === baseline, `${filledRows} → ${restored}`);
 
+    // --- program seçiliyken "dolanlar" filtresi adayın kendi alanına daralır
+    await evaluate(
+      client,
+      "(() => { const i = document.querySelector('#programSearch'); i.focus(); i.value = 'hemsire'; i.dispatchEvent(new Event('input')); })()",
+    );
+    await sleep(250);
+    await evaluate(client, "document.querySelector('#programList [role=\"option\"]').dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }))");
+    await sleep(200);
+    const withoutFilled = await visibleRows();
+    check(
+      'program seçimi tek başına satırları daraltmıyor',
+      withoutFilled === baseline,
+      `${withoutFilled} satır (program: ${await evaluate(client, "document.querySelector('#programSearch').value")})`,
+    );
+
+    await toggleFilled(true);
+    await sleep(200);
+    const scopedRows = await visibleRows();
+    const scopedUnvans = await evaluate(
+      client,
+      "JSON.stringify([...new Set([...document.querySelectorAll('#rows tr:not(.histo) td:first-child strong')].map((el) => el.textContent.trim()))])",
+    );
+    check(
+      'dolanlar + program: yalnız seçilen alanın kadroları geliyor',
+      scopedRows > 0 && scopedRows < filledRows,
+      `${filledRows} → ${scopedRows} satır · unvan ${scopedUnvans}`,
+    );
+    const scopeParsed = JSON.parse(scopedUnvans);
+    check(
+      'program alanı HEMŞİRELİK kadrolarıyla sınırlı',
+      scopeParsed.length === 1 && scopeParsed[0] === 'HEMŞİRE',
+      scopeParsed.join(', ') || 'satır yok',
+    );
+    const scopeNote = await evaluate(client, "document.querySelector('#programNote').textContent");
+    check('not, filtrenin alanla sınırlı olduğunu söylüyor', /yalnız bu alanla sınırlı/.test(scopeNote), scopeNote);
+
+    // ünvan/kurum/il listeleri de seçilen programa göre daralmalı
+    const optionLists = await evaluate(
+      client,
+      "JSON.stringify({ unvan: [...document.querySelectorAll('#unvan option')].map((o) => o.value).filter(Boolean), kurum: [...document.querySelectorAll('#kurum option')].map((o) => o.value).filter(Boolean), il: [...document.querySelectorAll('#il option')].map((o) => o.value).filter(Boolean) })",
+    );
+    const parsedOptions = JSON.parse(optionLists);
+    check(
+      'ünvan listesi programa göre değişiyor',
+      parsedOptions.unvan.length === 1 && parsedOptions.unvan[0] === 'HEMŞİRE',
+      `unvan: ${parsedOptions.unvan.join(', ') || 'boş'}`,
+    );
+    check(
+      'kurum ve il listeleri de programa göre daralıyor',
+      parsedOptions.kurum.length === 1 && parsedOptions.il.length === 1 && parsedOptions.il[0] === 'ESKİŞEHİR',
+      `kurum: ${parsedOptions.kurum.join(', ') || 'boş'} · il: ${parsedOptions.il.join(', ') || 'boş'}`,
+    );
+
+    await toggleFilled(false);
+    await sleep(150);
+    const unscoped = await visibleRows();
+    check('dolanlar kaldırılınca program süzgeci de kalkıyor', unscoped === baseline, `${scopedRows} → ${unscoped}`);
+    await clearAllFilters();
+
     const overflow = await evaluate(
       client,
       "(() => { const d = document.documentElement; return d.scrollWidth - d.clientWidth; })()",

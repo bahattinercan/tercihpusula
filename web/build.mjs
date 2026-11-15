@@ -358,7 +358,7 @@ function main() {
 <div class="toolbar">
   <label><input type="checkbox" id="onlyWritable" checked> sadece yazabileceklerim</label>
   <label><input type="checkbox" id="onlyEmpty"> geçen dönem boş kalanlar</label>
-  <label title="En az bir geçmiş dönemde kontenjanı dolan kadrolar"><input type="checkbox" id="onlyFilled"> geçmiş dönemde dolanlar</label>
+  <label title="En az bir geçmiş dönemde kontenjanı dolan kadrolar; mezuniyet programı seçiliyse yalnız o alan"><input type="checkbox" id="onlyFilled"> geçmiş dönemde dolanlar</label>
   <input id="query" type="search" placeholder="kurum, unvan, il veya kadro kodu ara" style="max-width:20rem">
   <span class="count" id="count"></span>
 </div>

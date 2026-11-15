@@ -91,11 +91,31 @@ function manualCodes(row) {
   });
 }
 
+// Kadro gerçekten bu programın alanında mı? `isWritable` bilinçli olarak gevşek (sertifika/şart
+// satırlarını "kontrol et" diye gösterir); burada ise "alan" tanımı dar: kadronun nitelik
+// kodlarından en az biri `programmes` tipinde ve seçili programı içeriyor olmalı.
+function inProgramme(row) {
+  if (!state.programKod) return true;
+  return row.nit.some((code) => {
+    const entry = state.data.nitelik[code];
+    return entry?.k === 'programmes' && state.writable.has(code);
+  });
+}
+
+function programmeRows() {
+  return state.programKod ? state.data.rows.filter(inProgramme) : state.data.rows;
+}
+
 function filteredRows() {
   const sigma = state.data.sigma ?? 6;
   const needle = foldTr(state.query.trim());
+  // "Geçmiş dönemde dolanlar" tek başına tüm alanları getiriyordu. Program seçiliyken bu filtre
+  // adayın kendi alanına daralır: kadro, seçilen programın nitelik kodlarıyla yazılabilir olmalı.
+  // (Bu yüzden "sadece yazabileceklerim" işaretli olmasa da program süzgeci uygulanır.)
+  const scopeToProgramme = state.onlyFilled && Boolean(state.programKod);
   return state.data.rows.filter((row) => {
-    if (state.onlyWritable && !isWritable(row)) return false;
+    if ((state.onlyWritable || scopeToProgramme) && !isWritable(row)) return false;
+    if (scopeToProgramme && !inProgramme(row)) return false;
     if (state.onlyEmpty && !row.bos) return false;
     if (state.onlyFilled && !filledInPast(row.gecmis)) return false;
     if (state.il && row.il !== state.il) return false;
@@ -318,6 +338,7 @@ function chooseProgramme(kod) {
   setComboOpen(false);
   renderProgrammes();
   applyProgramme();
+  fillSelects();
   renderTable();
   syncUrl();
 }
@@ -338,6 +359,7 @@ function clearFilters() {
   setComboOpen(false);
   renderProgrammes();
   applyProgramme();
+  fillSelects();
   state.onlyWritable = false;
   state.onlyEmpty = false;
   state.onlyFilled = false;
@@ -374,7 +396,7 @@ function activeFilterLine() {
   if (state.programKod) parts.push('program seçili');
   if (state.onlyWritable) parts.push('sadece yazabileceklerim');
   if (state.onlyEmpty) parts.push('boş kalanlar');
-  if (state.onlyFilled) parts.push('geçmiş dönemde dolanlar');
+  if (state.onlyFilled) parts.push(state.programKod ? 'geçmiş dönemde dolanlar (program alanı)' : 'geçmiş dönemde dolanlar');
   return parts;
 }
 
@@ -448,15 +470,19 @@ async function renderEmptyNote(rows) {
 }
 
 function fillSelects() {
-  const uniq = (field) => [...new Set(state.data.rows.map((r) => r[field]).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'tr'));
-  const fill = (id, values, current, placeholder) => {
+  // Ünvan/kurum/il seçenekleri mezuniyet programına göre değişir: HEMŞİRELİK seçilince listede
+  // yalnız o alanın kadroları kalır. Seçili bir değer yeni listede yoksa sıfırlanır (sessiz boş tablo olmasın).
+  const rows = programmeRows();
+  const uniq = (field) => [...new Set(rows.map((r) => r[field]).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'tr'));
+  const fill = (id, values, field, placeholder) => {
     const select = $(id);
+    if (state[field] && !values.includes(state[field])) state[field] = '';
     select.innerHTML = `<option value="">${placeholder}</option>` + values.map((v) => `<option>${esc(v)}</option>`).join('');
-    select.value = current;
+    select.value = state[field];
   };
-  fill('#il', uniq('il'), state.il, 'Tüm iller');
-  fill('#unvan', uniq('unvan'), state.unvan, 'Tüm unvanlar');
-  fill('#kurum', uniq('kurum'), state.kurum, 'Tüm kurumlar');
+  fill('#il', uniq('il'), 'il', 'Tüm iller');
+  fill('#unvan', uniq('unvan'), 'unvan', 'Tüm unvanlar');
+  fill('#kurum', uniq('kurum'), 'kurum', 'Tüm kurumlar');
 }
 
 function applyProgramme() {
@@ -465,15 +491,25 @@ function applyProgramme() {
   if (state.programKod) {
     const codes = state.data.programNitelik[String(state.programKod)] ?? [];
     for (const code of codes) state.writable.add(code);
-    const known = state.data.programmes.some((p) => p.k === state.programKod);
-    $('#programNote').textContent = known
-      ? `${codes.length} nitelik kodu bu programla eşleşiyor.`
-      : 'Bu program kılavuzda bulunamadı.';
-    $('#programNote').hidden = false;
-  } else {
-    $('#programNote').textContent = '';
-    $('#programNote').hidden = true;
   }
+  renderProgrammeNote();
+}
+
+// Not: seçili programın kaç nitelik koduyla eşleştiği + "dolanlar" filtresinin alanla sınırlı olduğu.
+function renderProgrammeNote() {
+  const note = $('#programNote');
+  if (!note) return;
+  if (!state.programKod) {
+    note.textContent = '';
+    note.hidden = true;
+    return;
+  }
+  const codes = state.data.programNitelik[String(state.programKod)] ?? [];
+  const known = state.data.programmes.some((p) => p.k === state.programKod);
+  const parts = [known ? `${codes.length} nitelik kodu bu programla eşleşiyor.` : 'Bu program kılavuzda bulunamadı.'];
+  if (state.onlyFilled) parts.push('“geçmiş dönemde dolanlar” yalnız bu alanla sınırlı.');
+  note.textContent = parts.join(' ');
+  note.hidden = false;
 }
 
 async function loadLevel(level) {
@@ -495,8 +531,8 @@ async function loadLevel(level) {
     $('#programSearch').value = state.programSearch;
   }
   renderProgrammes();
-  fillSelects();
   applyProgramme();
+  fillSelects();
   renderTable();
   renderList();
 }
@@ -533,6 +569,7 @@ function bind() {
   });
   $('#onlyFilled').addEventListener('change', (event) => {
     state.onlyFilled = event.target.checked;
+    renderProgrammeNote();
     renderTable();
   });
   $('#query').addEventListener('input', (event) => {
@@ -546,6 +583,7 @@ function bind() {
     if (chosen && event.target.value.trim() !== chosen.a) {
       state.programKod = null;
       applyProgramme();
+      fillSelects();
       renderTable();
       syncUrl();
     }
