@@ -194,6 +194,15 @@ p { margin: 8px 0; max-width: 64ch; color: var(--ink-soft); }
 .filters { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(128px, 1fr)); align-items: start; }
 .filters > div { min-width: 0; }
 .filters .full { grid-column: 1 / -1; }
+/* program: arama kutusu + seçim tek satırda; dar ekranda alt alta düşer */
+.program-row { display: flex; gap: 8px; align-items: center; }
+.program-row #programSearch { flex: 0 1 20rem; min-width: 0; }
+.program-row #program { flex: 1 1 auto; min-width: 0; }
+.program-row .count { flex: 0 0 auto; white-space: nowrap; }
+@media (max-width: 640px) {
+  .program-row { flex-wrap: wrap; }
+  .program-row #programSearch, .program-row #program { flex: 1 1 100%; }
+}
 label { display: block; font: 500 11px/1.3 var(--font-mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-soft); margin-block-end: 4px; }
 input, select, button { font: inherit; }
 input[type='number'], input[type='search'], input[type='text'], select {

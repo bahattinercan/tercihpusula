@@ -338,9 +338,11 @@ function main() {
 <div id="error" class="note" hidden></div>
 <form class="filters" id="filters" novalidate>
   <div class="full"><label for="program">mezun olduğunuz program</label>
-    <input id="programSearch" type="search" placeholder="program ara: hemşirelik, mühendis, büro…" autocomplete="off" style="margin-top:6px">
-    <select id="program" style="margin-top:6px"></select>
-    <div id="programMatch" class="hint" style="margin-top:4px"></div>
+    <div class="program-row">
+      <input id="programSearch" type="search" placeholder="program ara: hemşirelik, mühendis, büro…" autocomplete="off" aria-label="program ara">
+      <select id="program"></select>
+      <span id="programMatch" class="count" aria-live="polite"></span>
+    </div>
     <div id="programNote" class="hint" style="margin-top:4px"></div></div>
   <div><label for="level">öğrenim düzeyi</label>
     <select id="level"><option value="lisans">${LEVEL_LABEL.lisans}</option><option value="onlisans">${LEVEL_LABEL.onlisans}</option><option value="ortaogretim">${LEVEL_LABEL.ortaogretim}</option></select></div>
